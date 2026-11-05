@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operator Dashboard — Smart Kisan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore-compat.js"></script>
+  <script src="firebase-db.js"></script>
+  <style>
+    :root {
+      --green: #0b7d2a;
+      --green2: #1aa447;
+      --text: #142016;
+      --muted: #68736b;
+      --card: #ffffff;
+      --line: #e4ebe4;
+      --shadow: 0 12px 35px rgba(25, 75, 38, 0.1);
+      --danger: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(160deg, #d8f0dc 0%, #eaf6ec 40%, #f2faf3 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .topbar {
+      height: 64px; background: #fff; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 4%; position: sticky; top: 0; z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; font-weight: 700; }
+    .brand-icon { font-size: 28px; }
+    .badge { background: #0b7d2a; color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+    .card {
+      background: var(--card); border-radius: 18px; border: 1px solid var(--line);
+      box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px;
+    }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .centre-select {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+      font-size: 15px; font-family: inherit; background: #f8fbf8;
+    }
+    .live-box { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .metric {
+      background: #f4faf5; border-radius: 14px; padding: 18px 16px; text-align: center; border: 1px solid #d8eedc;
+    }
+    .metric label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+    .metric strong { font-size: 32px; font-weight: 800; color: var(--green); }
+    .metric.purple strong { color: #6d28d9; }
+    .status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; }
+    .dot.ok { background: #22c55e; animation: pulse 1.5s infinite; }
+    .dot.err { background: #ef4444; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    .btn {
+      flex: 1; min-width: 140px; padding: 16px 20px; border: none; border-radius: 14px;
+      font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: linear-gradient(135deg, #0b7d2a, #1aa447); color: #fff;
+      box-shadow: 0 8px 20px rgba(11, 125, 42, 0.3);
+    }
+    .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--line); }
+    .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    .jump-row { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+    .jump-row input {
+      width: 100px; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+      font-size: 16px; text-align: center; font-weight: 600;
+    }
+    .log-box { max-height: 240px; overflow-y: auto; font-size: 13px; line-height: 1.6; }
+    .log-item { padding: 8px 0; border-bottom: 1px solid #f0f4f0; color: var(--muted); }
+    .log-item b { color: var(--text); }
+    .log-item.err { color: #b91c1c; }
+    .info-box {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px;
+      padding: 14px 16px; font-size: 13px; color: #1e40af; line-height: 1.55;
+    }
+    .debug {
+      margin-top: 10px; font-size: 12px; color: var(--muted); background: #f8faf8;
+      padding: 10px 12px; border-radius: 10px; font-family: monospace; word-break: break-all;
+    }
+    @media (max-width: 560px) {
+      .live-box { grid-template-columns: 1fr; }
+      .btn { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-icon">🌱</span>
+      <span>SMART KISAN</span>
+    </a>
+    <span class="badge">OPERATOR MODE</span>
+  </header>
+
+  <div class="container">
+    <h1>🎛️ Operator Dashboard</h1>
+    <p class="subtitle">Advance the live queue for farmers waiting at the centre</p>
+
+    <div class="card">
+      <div class="card-title">📍 Select Centre</div>
+      <select id="centreSelect" class="centre-select" onchange="onCentreChange()"></select>
+    </div>
+
+    <div class="card">
+      <div class="status-row">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Connecting to Firestore...</span>
+      </div>
+      <div class="debug" id="debugBox">doc: —</div>
+
+      <div class="live-box">
+        <div class="metric purple">
+          <label>Current Token (serving now)</label>
+          <strong id="currentTokenDisplay">A-—</strong>
+        </div>
+        <div class="metric">
+          <label>Last Issued Token</label>
+          <strong id="lastIssuedDisplay">A-—</strong>
+        </div>
+      </div>
+
+      <div id="servingFarmerBox" style="background:#f8faf8;border:1px solid #d8eedc;border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:#68736b;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;">Now Serving — Farmer Details</div>
+        <div id="servingFarmerDetails" style="font-size:14px;line-height:1.7;color:#142016;">
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" style="flex:0;min-width:auto;padding:10px 14px;font-size:13px;" onclick="confirmCurrentKyc()">✓ Confirm KYC for this token</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnNext" onclick="doAdvance()">▶ Next Token</button>
+        <button class="btn btn-secondary" onclick="refreshState()">↻ Refresh</button>
+      </div>
+
+      <div class="jump-row">
+        <label style="font-size:13px;color:var(--muted);">Jump to serial:</label>
+        <input type="number" id="jumpSerial" min="101" placeholder="e.g. 150" />
+        <button class="btn btn-secondary" style="flex:0;min-width:90px;padding:12px;" onclick="doJump()">Go</button>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button class="btn btn-danger" style="width:100%;" onclick="doReset()">⚠ Reset Today's Queue</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🪪 KYC Verification (Confirm at Centre)</div>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5;">
+        Farmer arrives at the counter → verify documents + biometric → enter token and click <b>Confirm KYC</b>.
+        Status on the farmer app will update to <b>KYC Complete</b>.
+      </p>
+      <div class="jump-row" style="margin-top:0;">
+        <input type="text" id="kycTokenInput" placeholder="A-103 or full token" style="width:160px;padding:12px;border-radius:10px;border:1px solid var(--line);font-size:15px;font-weight:600;" />
+        <button class="btn btn-primary" style="flex:0;min-width:140px;padding:12px 16px;" id="confirmKycBtn" onclick="doConfirmKyc()">✓ Confirm KYC</button>
+      </div>
+      <div class="debug" id="kycResultBox" style="margin-top:12px;">KYC result: —</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚖️ Live Procurement Progress</div>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5;">
+        Advance the current farmer's procurement steps. Farmer app updates <b>live</b> as you click each stage.
+      </p>
+      <div class="jump-row" style="margin-top:0;margin-bottom:12px;">
+        <input type="text" id="procTokenInput" placeholder="A-101 or full token" style="width:160px;padding:12px;border-radius:10px;border:1px solid var(--line);font-size:15px;font-weight:600;" />
+        <button class="btn btn-secondary" style="flex:0;min-width:90px;padding:12px;" onclick="loadProcToken()">Load</button>
+      </div>
+      <div id="procCurrentStage" style="font-size:13px;margin-bottom:12px;color:#68736b;">Current stage: —</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-secondary" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="doProcStage('weighed')">1. Weighed</button>
+        <button class="btn btn-secondary" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="doProcStage('quality')">2. Quality</button>
+        <button class="btn btn-secondary" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="doProcStage('accepted')">3. Accepted</button>
+        <button class="btn btn-secondary" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="doProcStage('payment_initiated')">4. Pay Start</button>
+        <button class="btn btn-primary" style="flex:1;min-width:120px;padding:10px;font-size:13px;" onclick="doProcStage('payment_done')">5. Pay Done</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;">
+        <input type="text" id="procQty" placeholder="Qty (Qtl)" style="width:100px;padding:10px;border-radius:8px;border:1px solid var(--line);font-size:13px;" />
+        <input type="text" id="procGrade" placeholder="Grade (A/B)" style="width:100px;padding:10px;border-radius:8px;border:1px solid var(--line);font-size:13px;" />
+        <input type="text" id="procAmount" placeholder="Amount ₹" style="width:120px;padding:10px;border-radius:8px;border:1px solid var(--line);font-size:13px;" />
+      </div>
+      <div class="debug" id="procResultBox">Procurement: —</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Activity Log</div>
+      <div class="log-box" id="logBox">
+        <div class="log-item">Starting...</div>
+      </div>
+    </div>
+
+  
+  </div>
+
+  <script>
+    // ---- Operator access guard (only after Operator login) ----
+    (function () {
+      const role = localStorage.getItem('sk_user_role');
+      const op = localStorage.getItem('sk_op_authed');
+      const pinOk = sessionStorage.getItem('sk_staff_pin_ok');
+      if (role !== 'operator' || op !== '1' || pinOk !== '1') {
+        alert('Operator access only.\n\nLogin → select Operator → enter Staff PIN → login.');
+        window.location.href = 'login.html';
+        return;
+      }
+    })();
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQ3YK7r5lSvN6NzDNMsgVJ9nMLVKCrikI",
+      authDomain: "rentkarin-ce60d.firebaseapp.com",
+      projectId: "rentkarin-ce60d",
+      storageBucket: "rentkarin-ce60d.appspot.com",
+      messagingSenderId: "586594013175",
+      appId: "1:586594013175:web:bed29302743adc8bb7e8f2"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const ready = SK_DB.init();
+    console.log("SK_DB init:", ready, SK_DB.getStatus());
+
+    let currentCentre = localStorage.getItem("sk_op_centre") || "NDA62";
+    let unsub = null;
+
+    function setStatus(ok, msg) {
+      const dot = document.getElementById("statusDot");
+      const txt = document.getElementById("statusText");
+      dot.className = "dot " + (ok ? "ok" : "err");
+      txt.textContent = msg;
+    }
+
+    function addLog(msg, isErr) {
+      const box = document.getElementById("logBox");
+      const time = new Date().toLocaleTimeString();
+      const item = document.createElement("div");
+      item.className = "log-item" + (isErr ? " err" : "");
+      item.innerHTML = "<b>[" + time + "]</b> " + msg;
+      box.insertBefore(item, box.firstChild);
+    }
+
+    function populateCentres() {
+      const sel = document.getElementById("centreSelect");
+      const centres = SK_DB.getCentres();
+      sel.innerHTML = "";
+      centres.forEach(function (c) {
+        const opt = document.createElement("option");
+        opt.value = c.code;
+        opt.textContent = c.name + " (" + c.code + ")";
+        if (c.code === currentCentre) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function onCentreChange() {
+      currentCentre = document.getElementById("centreSelect").value;
+      localStorage.setItem("sk_op_centre", currentCentre);
+      SK_DB.setCentre(currentCentre);
+      startListening();
+      addLog("Switched to centre: <b>" + currentCentre + "</b>");
+    }
+
+    let lastShownSerial = null;
+
+    function renderState(data) {
+      const cur = data.currentSerial || 100;
+      const last = data.lastIssuedSerial || 100;
+      document.getElementById("currentTokenDisplay").textContent = "A-" + cur;
+      document.getElementById("lastIssuedDisplay").textContent = "A-" + last;
+      const docId = SK_DB.queueDocId(currentCentre);
+      document.getElementById("debugBox").textContent =
+        "doc: queue_state/" + docId + " | current=" + cur + " | lastIssued=" + last;
+      if (lastShownSerial !== cur) {
+        lastShownSerial = cur;
+        loadServingFarmer(cur);
+      }
+    }
+
+    async function loadServingFarmer(serial) {
+      const box = document.getElementById("servingFarmerDetails");
+      if (!box) return;
+      box.innerHTML = "Loading details for <b>A-" + serial + "</b>...";
+      try {
+        const b = await SK_DB.getBookingBySerial(serial, currentCentre);
+        if (!b) {
+          box.innerHTML =
+            "<b>A-" + serial + "</b> — No booking details found for this token.<br>" +
+            "<span style=\"color:#68736b;font-size:13px;\">Token may have been issued but farmer form is incomplete or data is outdated.</span>";
+          return;
+        }
+        const kyc = (b.kycVerified || b.kycStatus === "verified")
+          ? "<span style=\"color:#166534;font-weight:700;\">KYC ✓ Verified</span>"
+          : "<span style=\"color:#b45309;font-weight:700;\">KYC Pending</span>";
+        box.innerHTML =
+          "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;\">" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Token</span><br><b style=\"font-size:18px;color:#6d28d9;\">" + (b.shortToken || ("A-" + serial)) + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Full ID</span><br><b style=\"font-size:12px;word-break:break-all;\">" + (b.token || b.id || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Farmer Name</span><br><b>" + (b.farmerName || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Mobile</span><br><b>" + (b.mobile || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Aadhaar (last 4)</span><br><b>" + (b.aadhaarLast4 || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Slot</span><br><b>" + (b.dateTime || (b.date || "") + " " + (b.time || "") || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Centre</span><br><b>" + (b.centreName || currentCentre) + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">KYC</span><br>" + kyc + "</div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Crop</span><br><b>" + (b.cropType || "—") + " · " + (b.cropQty || "—") + " Qtl</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Payment</span><br><b>" + (b.paymentMode || "—") + " · ₹" + (b.amount || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Status</span><br><b>" + (b.status || "booked") + " / " + (b.queueStatus || "—") + "</b></div>" +
+          "<div><span style=\"color:#68736b;font-size:12px;\">Procurement</span><br><b style=\"color:#0b7d2a;\">" + (b.procurementStage || "not started") + "</b></div>" +
+          "</div>";
+        // prefill KYC + Procurement inputs
+        const kin = document.getElementById("kycTokenInput");
+        if (kin) kin.value = b.shortToken || ("A-" + serial);
+        const pin = document.getElementById("procTokenInput");
+        if (pin) pin.value = b.shortToken || b.token || ("A-" + serial);
+        const stageEl = document.getElementById("procCurrentStage");
+        if (stageEl) {
+          const st = b.procurementStage || "not started";
+          stageEl.innerHTML = "Current stage: <b style='color:#0b7d2a'>" + st + "</b> · Token " + (b.shortToken || ("A-" + serial));
+        }
+        if (b.weighedQty && document.getElementById("procQty")) document.getElementById("procQty").value = b.weighedQty;
+        if (b.qualityGrade && document.getElementById("procGrade")) document.getElementById("procGrade").value = b.qualityGrade;
+        if (b.paymentAmount && document.getElementById("procAmount")) document.getElementById("procAmount").value = b.paymentAmount;
+      } catch (e) {
+        box.innerHTML = "Error loading details: " + e.message;
+      }
+    }
+
+    async function confirmCurrentKyc() {
+      const curText = document.getElementById("currentTokenDisplay").textContent || "";
+      const serial = parseInt(curText.replace(/\D/g, ""), 10);
+      if (!serial) {
+        alert("Current token not found");
+        return;
+      }
+      const kin = document.getElementById("kycTokenInput");
+      if (kin) kin.value = "A-" + serial;
+      await doConfirmKyc();
+      loadServingFarmer(serial);
+    }
+
+    function startListening() {
+      if (unsub) {
+        try { unsub(); } catch (e) {}
+        unsub = null;
+      }
+
+      if (!SK_DB.isReady()) {
+        setStatus(false, "Firestore NOT ready — check console / internet");
+        addLog("SK_DB not ready: " + (SK_DB.getStatus().lastError || "unknown"), true);
+        return;
+      }
+
+      const docId = SK_DB.queueDocId(currentCentre);
+      document.getElementById("debugBox").textContent = "doc: queue_state/" + docId + " | listening...";
+      setStatus(true, "Live connected · " + docId);
+
+      unsub = SK_DB.listenQueue(function (data) {
+        renderState(data);
+      }, currentCentre);
+
+      SK_DB.getQueueState(currentCentre).then(function (d) {
+        if (d) {
+          renderState(d);
+          addLog("Loaded queue_state OK");
+        } else {
+          document.getElementById("currentTokenDisplay").textContent = "A-100";
+          document.getElementById("lastIssuedDisplay").textContent = "A-100";
+          addLog("No queue_state yet for today — press Next or Reset to create");
+        }
+      }).catch(function (e) {
+        addLog("getQueueState error: " + e.message, true);
+        setStatus(false, "Read error: " + e.message);
+      });
+    }
+
+    async function doAdvance() {
+      const btn = document.getElementById("btnNext");
+      btn.disabled = true;
+      try {
+        if (!SK_DB.isReady()) throw new Error("Firestore not ready");
+        const n = await SK_DB.advanceQueue(currentCentre);
+        addLog("Advanced → now serving <b>A-" + n + "</b>");
+        const d = await SK_DB.getQueueState(currentCentre);
+        if (d) renderState(d);
+        await loadServingFarmer(n);
+      } catch (e) {
+        console.error(e);
+        addLog("Error: " + e.message, true);
+        setStatus(false, "Write failed: " + e.message);
+        alert("Error: " + e.message + "\n\n1) Rules allow write?\n2) Internet OK?\n3) Check browser console (F12)");
+      }
+      btn.disabled = false;
+    }
+
+    async function doJump() {
+      const val = parseInt(document.getElementById("jumpSerial").value, 10);
+      if (!val || val < 101) {
+        alert("Enter a valid serial (101+)");
+        return;
+      }
+      try {
+        const n = await SK_DB.advanceQueue(currentCentre, val);
+        addLog("Jumped to <b>A-" + n + "</b>");
+        const d = await SK_DB.getQueueState(currentCentre);
+        if (d) renderState(d);
+      } catch (e) {
+        addLog("Error: " + e.message, true);
+        alert(e.message);
+      }
+    }
+
+    async function doReset() {
+      if (!confirm("Reset today's queue for " + currentCentre + "?\nCurrent & last issued → A-100")) return;
+      try {
+        await SK_DB.resetQueue(currentCentre);
+        addLog("Queue RESET for " + currentCentre);
+        const d = await SK_DB.getQueueState(currentCentre);
+        if (d) renderState(d);
+      } catch (e) {
+        addLog("Error: " + e.message, true);
+        alert(e.message);
+      }
+    }
+
+    function refreshState() {
+      SK_DB.getQueueState(currentCentre).then(function (d) {
+        if (d) {
+          renderState(d);
+          addLog("Manual refresh OK");
+          setStatus(true, "Live connected · " + SK_DB.queueDocId(currentCentre));
+        } else {
+          addLog("No queue_state document yet");
+        }
+      }).catch(function (e) {
+        addLog("Refresh error: " + e.message, true);
+      });
+    }
+
+    async function doConfirmKyc() {
+      const input = document.getElementById('kycTokenInput');
+      const token = (input && input.value || '').trim();
+      const box = document.getElementById('kycResultBox');
+      if (!token) {
+        alert('Enter token (e.g. A-103)');
+        return;
+      }
+      const btn = document.getElementById('confirmKycBtn');
+      btn.disabled = true;
+      try {
+        const res = await SK_DB.confirmKyc(token, 'Verified at centre by operator');
+        box.textContent = 'KYC Confirmed ✓  ' + (res.token || token);
+        box.style.color = '#166534';
+        box.style.fontWeight = '700';
+        addLog('KYC confirmed for <b>' + (res.token || token) + '</b>');
+        showToastSafe('KYC confirmed for ' + token);
+        // Keep form visible so operator can confirm next farmer
+        const kin = document.getElementById('kycTokenInput');
+        if (kin) kin.value = '';
+        // Refresh serving farmer details if same serial
+        try {
+          const curText = document.getElementById('currentTokenDisplay').textContent || '';
+          const serial = parseInt(curText.replace(/\D/g, ''), 10);
+          if (serial && typeof loadServingFarmer === 'function') loadServingFarmer(serial);
+        } catch (e) {}
+      } catch (e) {
+        console.error(e);
+        box.textContent = 'Error: ' + e.message;
+        addLog('KYC error: ' + e.message, true);
+        alert('KYC failed: ' + e.message + '\n\nIs the token correct? Booking must exist in Firestore.');
+      }
+      btn.disabled = false;
+    }
+
+    function showToastSafe(msg) {
+      // minimal feedback
+      try { console.log(msg); } catch (e) {}
+    }
+
+    // ---- Live Procurement Progress ----
+    async function loadProcToken() {
+      const input = document.getElementById("procTokenInput");
+      const token = (input && input.value || "").trim();
+      const box = document.getElementById("procResultBox");
+      const stageEl = document.getElementById("procCurrentStage");
+      if (!token) { alert("Enter token"); return; }
+      try {
+        let data = null;
+        if (typeof SK_DB.getBooking === "function") {
+          // try resolve short → full first via getBookingBySerial if possible
+          if (/^A-\d+$/i.test(token) || /^\d+$/.test(token)) {
+            const serial = parseInt(String(token).replace(/\D/g, ""), 10);
+            if (typeof SK_DB.getBookingBySerial === "function") {
+              data = await SK_DB.getBookingBySerial(serial, currentCentre);
+            }
+          }
+          if (!data) data = await SK_DB.getBooking(token);
+        }
+        if (!data) {
+          box.textContent = "Booking not found: " + token;
+          box.style.color = "#b91c1c";
+          return;
+        }
+        if (input) input.value = data.shortToken || data.token || token;
+        const st = data.procurementStage || "not started";
+        if (stageEl) stageEl.innerHTML = "Current stage: <b style='color:#0b7d2a'>" + st + "</b> · Token " + (data.shortToken || data.token);
+        box.textContent = "Loaded " + (data.shortToken || data.token) + " · stage=" + st;
+        box.style.color = "#166534";
+        // prefill meta
+        if (data.weighedQty && document.getElementById("procQty")) document.getElementById("procQty").value = data.weighedQty;
+        if (data.qualityGrade && document.getElementById("procGrade")) document.getElementById("procGrade").value = data.qualityGrade;
+        if (data.paymentAmount && document.getElementById("procAmount")) document.getElementById("procAmount").value = data.paymentAmount;
+        addLog("Loaded procurement token " + (data.shortToken || data.token));
+      } catch (e) {
+        box.textContent = "Error: " + e.message;
+        box.style.color = "#b91c1c";
+        addLog("Proc load error: " + e.message, true);
+      }
+    }
+
+    async function doProcStage(stage) {
+      const input = document.getElementById("procTokenInput");
+      let token = (input && input.value || "").trim();
+      const box = document.getElementById("procResultBox");
+      const stageEl = document.getElementById("procCurrentStage");
+
+      // fallback to currently serving token
+      if (!token) {
+        const cur = document.getElementById("currentTokenDisplay");
+        if (cur) token = (cur.textContent || "").trim();
+      }
+      if (!token || token === "A-—") {
+        alert("Enter / load a token first (or advance queue so a token is being served)");
+        return;
+      }
+
+      const meta = {};
+      const qty = (document.getElementById("procQty") || {}).value;
+      const grade = (document.getElementById("procGrade") || {}).value;
+      const amount = (document.getElementById("procAmount") || {}).value;
+      if (qty) meta.qty = qty;
+      if (grade) meta.grade = grade;
+      if (amount) meta.amount = amount.replace(/[^\d.]/g, "");
+
+      try {
+        box.textContent = "Updating " + stage + "…";
+        const res = await SK_DB.updateProcurementStage(token, stage, meta);
+        box.textContent = "✓ " + stage + " saved for " + (res.token || token);
+        box.style.color = "#166534";
+        box.style.fontWeight = "700";
+        if (stageEl) stageEl.innerHTML = "Current stage: <b style='color:#0b7d2a'>" + stage + "</b>";
+        addLog("Procurement <b>" + stage + "</b> → " + (res.token || token));
+        // also fill proc input with resolved token
+        if (input && res.token) input.value = res.token;
+      } catch (e) {
+        console.error(e);
+        box.textContent = "Error: " + e.message;
+        box.style.color = "#b91c1c";
+        addLog("Proc stage error: " + e.message, true);
+        alert("Failed: " + e.message);
+      }
+    }
+
+    // When serving farmer loads, auto-fill proc token
+    const _origLoadServing = typeof loadServingFarmer === "function" ? loadServingFarmer : null;
+    // boot continues below — we hook after render if possible
+
+    // boot
+    populateCentres();
+    SK_DB.setCentre(currentCentre);
+    startListening();
+    addLog("Operator ready · centre " + currentCentre + " · SK_DB.ready=" + SK_DB.isReady());
+  </script>
+</body>
+</html>

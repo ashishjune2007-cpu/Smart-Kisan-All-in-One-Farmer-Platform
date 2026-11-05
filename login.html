@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Smart Kisan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore-compat.js"></script>
+  <script src="firebase-db.js"></script>
+  <style>
+    :root {
+      --green: #0a5c20;
+      --green-dark: #084d1a;
+      --green-soft: #e8f5eb;
+      --text: #1a1f1c;
+      --muted: #6b7280;
+      --border: #d0d7d2;
+      --bg: #f3f6f4;
+      --white: #ffffff;
+      --error: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, "Noto Sans", Arial, sans-serif;
+      background: #1a2e22 url('login.png') center center / cover no-repeat fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(10,50,25,0.82) 0%, rgba(8,40,20,0.78) 50%, rgba(15,45,28,0.85) 100%);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .top-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+      background: rgba(255,255,255,0.12);
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .top-link:hover { background: rgba(255,255,255,0.22); text-decoration: none; }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--white);
+      border: 1px solid #c5d0c8;
+      border-top: 4px solid #0a5c20;
+      border-radius: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      padding: 28px 26px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .brand .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 4px;
+      background: #0a5c20;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0a5c20;
+      letter-spacing: 0.3px;
+    }
+    .brand p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .role-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: #eef2ef;
+      padding: 4px;
+      border-radius: 3px;
+      margin-bottom: 18px;
+      border: 1px solid #d0d7d2;
+    }
+    .role-tabs button {
+      border: none;
+      background: transparent;
+      padding: 10px 8px;
+      border-radius: 2px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.15s;
+    }
+    .role-tabs button.active {
+      background: #0a5c20;
+      color: #fff;
+      box-shadow: none;
+    }
+    .role-tabs button.active span { color: #c8e6c9 !important; }
+    .role-tabs button span {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 2px;
+      color: #9ca3af;
+    }
+    .role-tabs button.active span { color: #4b9a5f; }
+
+    .operator-hint {
+      display: none;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+    .operator-hint.show { display: block; }
+
+    .auth-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 14.5px;
+      font-family: inherit;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-control:focus {
+      border-color: var(--green);
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(10, 92, 32, 0.15);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 3px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: 0.15s;
+    }
+    .btn-primary {
+      background: var(--green);
+      color: #fff;
+      margin-top: 4px;
+    }
+    .btn-primary:hover { background: var(--green-dark); }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .terms-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .terms-check input {
+      margin-top: 3px;
+      accent-color: var(--green);
+    }
+    .terms-check a {
+      color: var(--green);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .social-row {
+      display: flex;
+      gap: 10px;
+    }
+    .social-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: 0.15s;
+    }
+    .social-btn:hover {
+      border-color: #d1d5db;
+      background: #f9fafb;
+    }
+    .social-btn .fa-google { color: #db4437; }
+    .social-btn .fa-facebook-f { color: #1877f2; }
+
+    .switch-mode {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .switch-mode a {
+      color: var(--green);
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .switch-mode a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--success);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 100;
+      opacity: 0;
+      transition: 0.25s;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      max-width: 90vw;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error { background: var(--error); }
+    .toast.warning { background: #d97706; }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .auth-card { padding: 24px 18px; }
+      .social-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="top-link">← Back to Home</a>
+
+  <div class="auth-card">
+    <div class="brand">
+      <div class="logo">🌱</div>
+      <h1>Smart Kisan</h1>
+      <p>Farmer services platform</p>
+    </div>
+
+    <div id="loginSection">
+      <div class="role-tabs" id="roleToggle">
+        <button type="button" class="role-btn active" id="roleFarmer" onclick="setRole('farmer')">
+          🌾 Farmer
+          <span>Beneficiary login</span>
+        </button>
+        <button type="button" class="role-btn" id="roleOperator" onclick="setRole('operator')">
+          🎛️ Operator
+          <span>Centre staff only</span>
+        </button>
+      </div>
+
+      <div class="operator-hint" id="operatorHint">
+        Staff access only. Enter your Staff PIN to control the live queue at the centre.
+      </div>
+
+      <h2 class="auth-title" id="authTitle">Welcome back</h2>
+      <p class="auth-subtitle" id="authSubtitle">Sign in to your account</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" required minlength="6" autocomplete="current-password">
+        </div>
+        <div class="form-group" id="staffPinGroup" style="display:none;">
+          <label for="staffPin">Staff PIN</label>
+          <input type="password" id="staffPin" class="form-control" placeholder="Enter staff PIN" maxlength="8" inputmode="numeric" autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary" id="loginBtn">
+          <i class="fas fa-sign-in-alt"></i> Log In
+        </button>
+      </form>
+    </div>
+
+    <div id="signupSection" class="hidden">
+      <h2 class="auth-title">Create account</h2>
+      <p class="auth-subtitle">Register as a farmer</p>
+      <form id="signupForm" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label for="signupName">Full name</label>
+          <input type="text" id="signupName" class="form-control" placeholder="Your full name" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" class="form-control" placeholder="name@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" class="form-control" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="terms-check">
+          <input type="checkbox" id="acceptTerms" required>
+          <label for="acceptTerms">I agree to the <a href="#">Terms &amp; Conditions</a></label>
+        </div>
+        <button type="submit" class="btn btn-primary" id="signupBtn">
+          <i class="fas fa-user-plus"></i> Sign Up
+        </button>
+      </form>
+    </div>
+
+    <div class="divider">or</div>
+    <div class="social-row">
+      <button type="button" class="social-btn" onclick="googleLogin()">
+        <i class="fab fa-google"></i> Google
+      </button>
+      <button type="button" class="social-btn" onclick="facebookLogin()">
+        <i class="fab fa-facebook-f"></i> Facebook
+      </button>
+    </div>
+
+    <div class="switch-mode">
+      <span id="switchText">Don't have an account?</span>
+      <a onclick="toggleAuthMode()" id="switchLink">Sign up</a>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"><span id="toastMsg">Success!</span></div>
+
+<script>
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQ3YK7r5lSvN6NzDNMsgVJ9nMLVKCrikI",
+      authDomain: "rentkarin-ce60d.firebaseapp.com",
+      projectId: "rentkarin-ce60d",
+      storageBucket: "rentkarin-ce60d.appspot.com",
+      messagingSenderId: "586594013175",
+      appId: "1:586594013175:web:bed29302743adc8bb7e8f2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    if (typeof SK_DB !== 'undefined') SK_DB.init();
+
+    let isLoginMode = true;
+
+    function toggleAuthMode() {
+      isLoginMode = !isLoginMode;
+      document.getElementById('loginSection').classList.toggle('hidden', !isLoginMode);
+      document.getElementById('signupSection').classList.toggle('hidden', isLoginMode);
+      document.getElementById('switchText').textContent = isLoginMode 
+        ? "Don't have an account?" 
+        : "Already have an account?";
+      document.getElementById('switchLink').textContent = isLoginMode ? "Sign up" : "Log in";
+    }
+
+    let selectedRole = localStorage.getItem('sk_login_role') || 'farmer';
+
+    const STAFF_PIN = '2468';
+
+    function setRole(role) {
+      selectedRole = role;
+      localStorage.setItem('sk_login_role', role);
+      document.getElementById('roleFarmer').classList.toggle('active', role === 'farmer');
+      document.getElementById('roleOperator').classList.toggle('active', role === 'operator');
+      const hint = document.getElementById('operatorHint');
+      if (hint) hint.classList.toggle('show', role === 'operator');
+      const pinGroup = document.getElementById('staffPinGroup');
+      if (pinGroup) pinGroup.style.display = role === 'operator' ? 'block' : 'none';
+      const pinInput = document.getElementById('staffPin');
+      if (pinInput) {
+        pinInput.required = role === 'operator';
+        if (role !== 'operator') pinInput.value = '';
+      }
+      const title = document.getElementById('authTitle');
+      const sub = document.getElementById('authSubtitle');
+      if (role === 'operator') {
+        if (title) title.textContent = 'Operator Login';
+        if (sub) sub.textContent = 'Centre staff — control live queue tokens';
+      } else {
+        if (title) title.textContent = 'Welcome Back';
+        if (sub) sub.textContent = 'Log in to your farmer / beneficiary account';
+      }
+    }
+
+    function redirectAfterAuth() {
+      const role = localStorage.getItem('sk_user_role') || selectedRole || 'farmer';
+      if (role === 'operator') {
+        window.location.href = 'operator.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+
+    function clearBookingLocalStorage() {
+      var keys = [
+        'kycToken','kycShortToken','kycDate','kycPaid','kycStatus','kycArchived',
+        'kycVerified','sk_last_booking','sk_all_bookings','sk_fresh_booking',
+        'sk_slot_history','razorpay_payment_id','sk_token_serial',
+        'sk_booking_type','sk_kyc_token','sk_kyc_short','sk_kyc_date'
+      ];
+      keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    }
+    function bindAuthUser(user) {
+      if (!user) {
+        // Clear local cache only on full logout. Data is restored from Firestore on next login.
+        clearBookingLocalStorage();
+        localStorage.removeItem('sk_auth_uid');
+        return;
+      }
+      var prev = localStorage.getItem('sk_auth_uid');
+      // Clear only when switching to a different account
+      if (prev && prev !== user.uid) clearBookingLocalStorage();
+      localStorage.setItem('sk_auth_uid', user.uid);
+      if (user.displayName) localStorage.setItem('farmerName', user.displayName);
+      // Restore this user's bookings from cloud so data survives logout → login
+      if (typeof SK_DB !== 'undefined' && SK_DB.restoreUserBookings) {
+        SK_DB.restoreUserBookings(user.uid).then(function (rec) {
+          if (rec && rec.farmerName && !localStorage.getItem('farmerName')) {
+            localStorage.setItem('farmerName', rec.farmerName);
+          }
+        }).catch(function () {});
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+
+      // Operator must enter correct staff PIN
+      if (selectedRole === 'operator') {
+        const pin = (document.getElementById('staffPin') || {}).value || '';
+        if (pin.trim() !== STAFF_PIN) {
+          showToast('Invalid Staff PIN. Operator access denied.', 'error');
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          bindAuthUser(userCredential.user);
+          localStorage.setItem('sk_user_role', selectedRole);
+          localStorage.setItem('sk_op_authed', selectedRole === 'operator' ? '1' : '0');
+          if (selectedRole === 'operator') {
+            sessionStorage.setItem('sk_staff_pin_ok', '1');
+          } else {
+            sessionStorage.removeItem('sk_staff_pin_ok');
+          }
+          showToast(selectedRole === 'operator' ? 'Operator login success' : 'Welcome back! 🌱', 'success');
+          setTimeout(redirectAfterAuth, 800);
+        })
+        .catch((error) => {
+          showToast(error.message, "error");
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log In';
+        });
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      
+      if (!document.getElementById('acceptTerms').checked) {
+        return showToast("Please accept Terms & Conditions", "error");
+      }
+
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const btn = document.getElementById('signupBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Creating account...';
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          return userCredential.user.updateProfile({
+            displayName: name
+          });
+        })
+        .then(() => {
+          if (auth.currentUser) bindAuthUser(auth.currentUser);
+          clearBookingLocalStorage(); // fresh account starts with no KYC/token
+          if (auth.currentUser) localStorage.setItem('sk_auth_uid', auth.currentUser.uid);
+          showToast("Account created successfully! 🎉", "success");
+          localStorage.setItem('sk_user_role', 'farmer');
+          localStorage.setItem('sk_op_authed', '0');
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 1000);
+        })
+        .catch((error) => {
+          showToast(error.message, "error");
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-user-plus"></i> Sign Up';
+        });
+    }
+
+    function googleLogin() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          bindAuthUser(result.user);
+          localStorage.setItem('sk_user_role', selectedRole || 'farmer');
+          localStorage.setItem('sk_op_authed', (selectedRole === 'operator') ? '1' : '0');
+          showToast("Logged in with Google! 🌱", "success");
+          setTimeout(redirectAfterAuth, 800);
+        })
+        .catch((error) => {
+          showToast(error.message, "error");
+        });
+    }
+
+    function facebookLogin() {
+      const provider = new firebase.auth.FacebookAuthProvider();
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          showToast("Logged in with Facebook!", "success");
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 1000);
+        })
+        .catch((error) => {
+          showToast("Facebook login: " + error.message, "warning");
+        });
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        bindAuthUser(user);
+        const role = localStorage.getItem('sk_user_role') || 'farmer';
+        if (role === 'operator') {
+          window.location.href = 'operator.html';
+        } else {
+          window.location.href = 'index.html';
+        }
+      }
+    });
+
+    // init role UI
+    setRole(localStorage.getItem('sk_login_role') || 'farmer');
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toastMsg');
+      toast.className = `toast ${type} show`;
+      msg.textContent = message;
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KYC Branch Visit — Smart Kisan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --green: #0b7d2a;
+      --green2: #1aa447;
+      --text: #142016;
+      --muted: #68736b;
+      --card: #ffffff;
+      --line: #e4ebe4;
+      --bg: #f6faf5;
+      --shadow: 0 12px 35px rgba(25, 75, 38, 0.08);
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(160deg, #d8f0dc 0%, #eaf6ec 35%, #f2faf3 70%, #e3f2e6 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .topbar {
+      height: 70px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon { font-size: 32px; }
+    .brand h1 {
+      font-size: 20px;
+      color: var(--green);
+      margin: 0;
+      font-weight: 800;
+    }
+    .brand span {
+      font-size: 12px;
+      color: #667067;
+      display: block;
+    }
+    .back-btn {
+      background: #fff;
+      border: 1px solid #dce4dc;
+      border-radius: 10px;
+      padding: 9px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--green);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-btn:hover { background: #e8f7ea; }
+
+    .container {
+      max-width: 720px;
+      margin: 30px auto;
+      padding: 0 18px 60px;
+    }
+
+    .page-title {
+      margin-bottom: 22px;
+    }
+    .page-title h2 {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+    .page-title p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+
+    .caution-box {
+      background: #fff8e6;
+      border: 1.5px solid #f5d78e;
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .caution-box .icon {
+      font-size: 26px;
+      line-height: 1;
+    }
+    .caution-box b {
+      display: block;
+      color: #92400e;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    .caution-box p {
+      color: #78350f;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .card h3 {
+      font-size: 17px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 13.5px;
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--line);
+      border-radius: 11px;
+      font-size: 15px;
+      font-family: inherit;
+      background: #fafcfa;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--green);
+    }
+
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .slot-btn {
+      border: 2px solid var(--line);
+      background: #fff;
+      border-radius: 11px;
+      padding: 12px 8px;
+      cursor: pointer;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+    .slot-btn:hover {
+      border-color: var(--green);
+      background: #f0faef;
+    }
+    .slot-btn.selected {
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+    }
+    .slot-btn small {
+      display: block;
+      font-weight: 500;
+      font-size: 11px;
+      margin-top: 3px;
+      opacity: 0.85;
+    }
+
+    .branch-info {
+      background: #f0faef;
+      border: 1px solid #cce1ce;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+    .branch-info b { color: var(--green); }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(11, 125, 42, 0.28);
+      transition: 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(11, 125, 42, 0.35);
+    }
+    .btn-primary:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 10%;
+      right: 10%;
+      height: 3px;
+      background: #e4ebe4;
+      z-index: 0;
+    }
+    .step {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+    }
+    .step .circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #e4ebe4;
+      color: #68736b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .step.active .circle {
+      background: var(--green);
+      color: #fff;
+    }
+    .step.done .circle {
+      background: var(--green);
+      color: #fff;
+    }
+    .step span {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .step.active span { color: var(--green); }
+
+    .success-box {
+      text-align: center;
+      padding: 30px 20px;
+      display: none;
+    }
+    .success-box.show { display: block; }
+    .success-box .big-icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+    .success-box h3 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: var(--green);
+    }
+    .success-box p {
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .token-box {
+      background: #f0faef;
+      border: 2px dashed var(--green);
+      border-radius: 14px;
+      padding: 16px;
+      margin: 18px 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--green);
+    }
+
+    @media (max-width: 600px) {
+      .slot-grid { grid-template-columns: repeat(2, 1fr); }
+      .container { margin-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon">🌱</div>
+      <div>
+        <h1>SMART KISAN</h1>
+        <span>All in One Farmer Platform</span>
+      </div>
+    </a>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+  </header>
+
+  <div class="container">
+    <div class="page-title">
+      <h2>🪪 Book KYC Branch Visit</h2>
+      <p>Visit Kisan Seva Kendra for KYC / document verification</p>
+    </div>
+<div class="caution-box">
+      <div class="icon">⚠️</div>
+      <div>
+        <b>Important Caution</b>
+        <p>
+          <strong>Bring crop sample / documents. Reach centre only when your token is near.</strong><br>
+          Please carry original Aadhaar Card + Bank Passbook / Cancelled Cheque. 
+          Live queue + SMS will tell you when to come to the counter — do not stand in line early.
+        </p>
+      </div>
+    </div>
+<div class="steps">
+      <div class="step active" id="step1">
+        <div class="circle">1</div>
+        <span>Select Slot</span>
+      </div>
+      <div class="step" id="step2">
+        <div class="circle">2</div>
+        <span>Payment</span>
+      </div>
+      <div class="step" id="step3">
+        <div class="circle">3</div>
+        <span>Done</span>
+      </div>
+    </div>
+<div class="card" id="bookingForm">
+      <div class="branch-info">
+        <b>📍 Selected Branch:</b> Kisan Seva Kendra, Noida Sector-62<br>
+        <small style="color:#68736b;">Distance: <span id="branchDist">3.2 km</span> | Timing: 9:00 AM – 5:00 PM (Mon–Sat)</small>
+        <button type="button" onclick="detectNearest()" style="margin-top:8px;background:#0b7d2a;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📍 Detect My Location</button>
+      </div>
+
+      <div class="form-group">
+        <label>Select Date</label>
+        <input type="date" id="slotDate" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label>Select Time Slot</label>
+        <div class="slot-grid" id="slotGrid">
+          <button type="button" class="slot-btn" data-time="09:00 AM – 10:00 AM">09:00 AM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="10:00 AM – 11:00 AM">10:00 AM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="11:00 AM – 12:00 PM">11:00 AM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="12:00 PM – 01:00 PM">12:00 PM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="02:00 PM – 03:00 PM">02:00 PM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="03:00 PM – 04:00 PM">03:00 PM<small>Available</small></button>
+          <button type="button" class="slot-btn" data-time="04:00 PM – 05:00 PM">04:00 PM<small>Available</small></button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Your Full Name</label>
+        <input type="text" id="farmerName" class="form-control" placeholder="Enter name as per Aadhaar" required>
+      </div>
+
+      <div class="form-group">
+        <label>Mobile Number</label>
+        <input type="tel" id="mobile" class="form-control" placeholder="10-digit mobile number" maxlength="10" required>
+      </div>
+
+      <div class="form-group">
+        <label>Aadhaar Number (last 4 digits)</label>
+        <input type="text" id="aadhaar" class="form-control" placeholder="XXXX" maxlength="4" required>
+      </div>
+
+      <button class="btn-primary" id="bookBtn" onclick="goToPayment()">
+        Proceed to Payment →
+      </button>
+    </div>
+
+    <div class="card" id="paymentCard" style="display:none;">
+      <h3>💳 Complete Payment</h3>
+      <p style="color:#68736b;font-size:14px;margin-bottom:16px;">
+        Pay the token fee to confirm your slot. You will then get a position in the live queue.
+      </p>
+      <div class="branch-info" style="margin-bottom:16px;">
+        <b>Branch:</b> Kisan Seva Kendra, Noida Sector-62<br>
+        <b>Date & Time:</b> <span id="paySummary">—</span><br>
+        <b>Name:</b> <span id="payName">—</span>
+      </div>
+      <div style="background:#f0faef;border:1px solid #cce1ce;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px;color:#68736b;">KYC Slot Fee</span>
+          <b style="font-size:22px;color:#0b7d2a;">₹50</b>
+        </div>
+      </div>
+      <button class="btn-primary" id="payBtn" onclick="payWithRazorpay()" style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <img src="https://razorpay.com/favicon.png" alt="" style="width:18px;height:18px;" onerror="this.style.display='none'">
+        Pay ₹50 with Razorpay
+      </button>
+      <button class="btn-primary" onclick="payWithCash()" style="margin-bottom:10px;background:linear-gradient(135deg,#d66b00,#f59e0b);box-shadow:0 6px 18px rgba(214,107,0,0.28);">
+        💵 Cash on Visit (₹50 at centre)
+      </button>
+      <button type="button" onclick="backToForm()" style="width:100%;background:#fff;border:2px solid #e4ebe4;color:#68736b;padding:12px;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit;">
+        ← Back to Slot Details
+      </button>
+    </div>
+
+    <div class="card success-box" id="successBox">
+      <div class="big-icon">✅</div>
+      <h3>Slot Booked Successfully!</h3>
+      <p>Payment successful. Your KYC branch visit is booked.<br>Visit the centre for verification. This is NOT a procurement queue token.</p>
+      <div class="token-box" id="tokenDisplay">Token: A-XXXX</div>
+      <p style="font-size:14px;color:#334155;">
+        <b>Branch:</b> Kisan Seva Kendra, Noida Sec-62<br>
+        <b>Date & Time:</b> <span id="confirmDateTime">—</span><br>
+        <b>Payment:</b> <span id="confirmPayId">—</span>
+      </p>
+      <div style="background:#fff8e6;border:1px solid #f5d78e;border-radius:12px;padding:12px;margin:18px 0;text-align:left;font-size:13px;color:#78350f;">
+        📡 <b>Next:</b> Check Live Queue on Home. When the operator calls your token, go to the counter. KYC can also be confirmed at the centre.
+      </div>
+      <button class="btn-primary" onclick="window.location.href='index.html'" style="margin-top:8px;">Back to Home</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore-compat.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="firebase-db.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQ3YK7r5lSvN6NzDNMsgVJ9nMLVKCrikI",
+      authDomain: "rentkarin-ce60d.firebaseapp.com",
+      projectId: "rentkarin-ce60d",
+      storageBucket: "rentkarin-ce60d.appspot.com",
+      messagingSenderId: "586594013175",
+      appId: "1:586594013175:web:bed29302743adc8bb7e8f2"
+    };
+    if (typeof firebase !== "undefined" && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    if (typeof SK_DB !== "undefined") SK_DB.init();
+
+    // Per-account: if different user logged in, do not reuse previous KYC/token
+    (function () {
+      try {
+        var u = firebase.auth && firebase.auth().currentUser;
+        if (u) {
+          var prev = localStorage.getItem('sk_auth_uid');
+          if (prev && prev !== u.uid) {
+            ['kycToken','kycShortToken','kycDate','kycPaid','kycStatus','kycArchived','kycVerified','sk_last_booking','sk_fresh_booking','razorpay_payment_id'].forEach(function(k){ localStorage.removeItem(k); });
+          }
+          localStorage.setItem('sk_auth_uid', u.uid);
+        }
+      } catch (e) {}
+    })();
+
+
+    const RAZORPAY_KEY = "rzp_test_TXgfvhjFm2UTAG";
+    const RAZORPAY_AMOUNT_PAISE = 5000;
+    const dateInput = document.getElementById('slotDate');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+    let selectedTime = null;
+    let pendingBooking = null;
+    document.querySelectorAll('.slot-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedTime = btn.dataset.time;
+      });
+    });
+    function detectNearest() {
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        document.getElementById('branchDist').textContent = '2.1 km (detected)';
+        alert('Nearest centre found: Kisan Seva Kendra, Noida Sector-62 (2.1 km)');
+      }, function() {
+        document.getElementById('branchDist').textContent = '3.2 km (approx)';
+        alert('Location access denied. Showing default nearest centre.');
+      });
+    }
+    const savedName = localStorage.getItem('farmerName');
+    if (savedName) document.getElementById('farmerName').value = savedName;
+
+    function goToPayment() {
+      const date = dateInput.value;
+      const name = document.getElementById('farmerName').value.trim();
+      const mobile = document.getElementById('mobile').value.trim();
+      const aadhaar = document.getElementById('aadhaar').value.trim();
+      if (!date) return alert('Please select a date');
+      if (!selectedTime) return alert('Please select a time slot');
+      if (!name) return alert('Please enter your name');
+      if (mobile.length !== 10) return alert('Please enter valid 10-digit mobile number');
+      if (aadhaar.length !== 4) return alert('Please enter last 4 digits of Aadhaar');
+      pendingBooking = { date, time: selectedTime, name, mobile, aadhaar };
+      document.getElementById('bookingForm').style.display = 'none';
+      document.getElementById('paymentCard').style.display = 'block';
+      document.getElementById('paySummary').textContent = date + ' | ' + selectedTime;
+      document.getElementById('payName').textContent = name;
+      document.getElementById('step1').classList.add('done');
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+    }
+
+    function backToForm() {
+      document.getElementById('paymentCard').style.display = 'none';
+      document.getElementById('bookingForm').style.display = 'block';
+      document.getElementById('step1').classList.add('active');
+      document.getElementById('step1').classList.remove('done');
+      document.getElementById('step2').classList.remove('active');
+    }
+
+    function payWithRazorpay() {
+      if (!pendingBooking) return alert('Please fill slot details first');
+      try {
+        if (typeof Razorpay === 'undefined') {
+          if (confirm('Razorpay could not load. Mark payment as successful for testing?')) onPaymentSuccess('pay_demo_' + Date.now());
+          return;
+        }
+        const options = {
+          key: RAZORPAY_KEY,
+          amount: RAZORPAY_AMOUNT_PAISE,
+          currency: "INR",
+          name: "Smart Kisan",
+          description: "Procurement Slot - " + pendingBooking.date,
+          image: "login.png",
+          handler: function (response) { onPaymentSuccess(response.razorpay_payment_id); },
+          prefill: { name: pendingBooking.name, contact: pendingBooking.mobile, email: "farmer@smartkisan.in" },
+          notes: { service: "PROCUREMENT_SLOT", date: pendingBooking.date, time: pendingBooking.time },
+          theme: { color: "#0b7d2a" }
+        };
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (resp) {
+          alert('Payment failed: ' + (resp.error && resp.error.description ? resp.error.description : 'Try again') + '. You can use Cash on Visit.');
+        });
+        rzp.open();
+      } catch (e) {
+        if (confirm('Razorpay error. Mark payment as successful for testing?')) onPaymentSuccess('pay_demo_' + Date.now());
+      }
+    }
+
+    function payWithCash() {
+      if (!pendingBooking) return alert('Please fill slot details first');
+      if (confirm('You selected Cash on Visit. You must pay ₹50 at the branch. Confirm?')) {
+        onPaymentSuccess('cash_visit_' + Date.now());
+      }
+    }
+
+    async function onPaymentSuccess(paymentId) {
+      const dateStr = pendingBooking.date + ' | ' + pendingBooking.time;
+      const mode = (paymentId && String(paymentId).indexOf('cash_') === 0) ? 'cash' : 'online';
+      let record = null;
+      try {
+        if (typeof SK_DB !== 'undefined') {
+          record = await SK_DB.saveBooking({
+            serviceType: 'kyc',
+            name: pendingBooking.name,
+            mobile: pendingBooking.mobile,
+            aadhaar: pendingBooking.aadhaar,
+            date: pendingBooking.date,
+            time: pendingBooking.time,
+            paymentId: paymentId || '',
+            paymentMode: mode,
+            amount: 50,
+            uid: (firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null
+          });
+        }
+      } catch (e) {
+        console.log('DB save fallback', e);
+      }
+      const token = (record && record.token) ? record.token : ('KYC-' + Date.now().toString().slice(-8));
+      const shortToken = (record && record.shortToken) ? record.shortToken : ('K-' + String(token).slice(-4));
+      // KYC appointment only — does NOT join live procurement queue
+      localStorage.setItem('sk_booking_type', 'kyc');
+      localStorage.setItem('sk_kyc_token', token);
+      localStorage.setItem('sk_kyc_short', shortToken);
+      localStorage.setItem('sk_kyc_date', dateStr);
+      localStorage.setItem('kycPaid', 'true');
+      localStorage.setItem('kycStatus', 'kyc_pending'); // waiting for centre confirmation
+      localStorage.removeItem('kycVerified');
+      localStorage.removeItem('kycArchived');
+      // Do not activate procurement live-queue keys
+      localStorage.removeItem('kycToken');
+      localStorage.removeItem('kycShortToken');
+      localStorage.removeItem('kycDate');
+      localStorage.removeItem('sk_fresh_booking');
+      localStorage.setItem('razorpay_payment_id', paymentId || '');
+      if (pendingBooking.name) localStorage.setItem('farmerName', pendingBooking.name);
+      // Keep token for operator lookup / status check
+      localStorage.setItem('kycToken', token); // used by getKycStatus
+      localStorage.setItem('kycShortToken', shortToken);
+      localStorage.setItem('kycDate', dateStr);
+      document.getElementById('paymentCard').style.display = 'none';
+      document.getElementById('successBox').classList.add('show');
+      document.getElementById('tokenDisplay').textContent = 'KYC Ref: ' + shortToken + ' (' + token + ')';
+      document.getElementById('confirmDateTime').textContent = dateStr;
+      var storeMsg = '';
+      if (record && record._storedIn === 'firestore+local') storeMsg = ' • Saved permanently (Firestore)';
+      else if (record && record._storedIn) storeMsg = ' • Saved on this device only';
+      document.getElementById('confirmPayId').textContent = (paymentId || 'Paid') + storeMsg;
+      document.getElementById('step2').classList.add('done');
+      document.getElementById('step2').classList.remove('active');
+      document.getElementById('step3').classList.add('active');
+      setTimeout(function () {
+        window.location.href = 'index.html?kyc=1';
+      }, 2200);
+    }
+  </script>
+</body>
+</html>

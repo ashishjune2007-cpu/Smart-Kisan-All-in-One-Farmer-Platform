@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — Smart Kisan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore-compat.js"></script>
+  <script src="firebase-db.js"></script>
+  <style>
+    :root {
+      --green: #0b7d2a;
+      --green2: #1aa447;
+      --text: #142016;
+      --muted: #68736b;
+      --card: #ffffff;
+      --line: #e4ebe4;
+      --shadow: 0 12px 35px rgba(25, 75, 38, 0.08);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(160deg, #d8f0dc 0%, #eaf6ec 35%, #f2faf3 70%, #e3f2e6 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+    .topbar {
+      height: 70px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon { font-size: 32px; }
+    .brand h1 { font-size: 20px; color: var(--green); margin: 0; font-weight: 800; }
+    .brand span { font-size: 12px; color: #667067; display: block; }
+    .back-btn {
+      background: #fff;
+      border: 1px solid #dce4dc;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-weight: 600;
+      color: var(--green);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .container {
+      max-width: 520px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .profile-header {
+      background: linear-gradient(135deg, #0b7d2a, #1aa447);
+      border-radius: 20px;
+      padding: 28px 22px;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(255,255,255,0.5);
+    }
+    .profile-header h2 { font-size: 22px; margin-bottom: 4px; }
+    .profile-header p { opacity: 0.9; font-size: 14px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      font-size: 15px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f0f4f0;
+      text-decoration: none;
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:hover { color: var(--green); }
+    .menu-item .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: #f0faef;
+    }
+    .menu-item .text { flex: 1; }
+    .menu-item .text b { display: block; font-size: 15px; }
+    .menu-item .text small { color: var(--muted); font-size: 12px; }
+    .menu-item .arrow { color: #94a3b8; font-size: 18px; }
+
+    .logout-btn {
+      width: 100%;
+      background: #fff;
+      border: 2px solid #ef4444;
+      color: #ef4444;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-family: inherit;
+    }
+    .logout-btn:hover { background: #fef2f2; }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #e8f7ea;
+      color: var(--green);
+    }
+    .status-badge.pending {
+      background: #fff0dc;
+      color: #d66b00;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.08);
+      width: min(700px, 94%);
+      height: 68px;
+      border-radius: 18px 18px 0 0;
+      display: flex;
+      justify-content: space-around;
+      z-index: 30;
+    }
+    .bottom-nav a, .bottom-nav button {
+      border: 0;
+      background: none;
+      color: #68736b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 19px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+    }
+    .bottom-nav span { font-size: 10px; }
+    .bottom-nav .active { color: var(--green); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon">🌱</div>
+      <div>
+        <h1>SMART KISAN</h1>
+        <span>All in One Farmer Platform</span>
+      </div>
+    </a>
+    <a href="index.html" class="back-btn">← Home</a>
+  </header>
+
+  <div class="container">
+    <div class="profile-header">
+      <div class="avatar" style="font-size:48px;background:rgba(255,255,255,0.3);">🧑‍🌾</div>
+      <h2 id="profileName">Farmer</h2>
+      <p id="profileEmail">Not logged in</p>
+    </div>
+
+    <div class="card">
+      <h3>My Services</h3>
+      <a class="menu-item" href="slot-booking.html">
+        <div class="icon">🪪</div>
+        <div class="text">
+          <b>KYC / Slot Booking</b>
+          <small>Book or manage branch visit</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#kyc">
+        <div class="icon">📋</div>
+        <div class="text">
+          <b>KYC Status</b>
+          <small id="kycStatusText">Check current status</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#queue">
+        <div class="icon">🚜</div>
+        <div class="text">
+          <b>Procurement Queue</b>
+          <small>Live token & status</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#advisory">
+        <div class="icon">🌿</div>
+        <div class="text">
+          <b>Advisory & Experts</b>
+          <small>Helpline & guidance</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#liveTracking">
+        <div class="icon">📡</div>
+        <div class="text">
+          <b>Live Tracking</b>
+          <small>Vehicle & delivery status</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#marketPrices">
+        <div class="icon">💰</div>
+        <div class="text">
+          <b>Mandi Prices</b>
+          <small>Today’s live rates</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <a class="menu-item" href="index.html#weather">
+        <div class="icon">🌤️</div>
+        <div class="text">
+          <b>Weather Advisory</b>
+          <small>Rain & farm tips</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+    </div>
+
+    <div class="card">
+      <h3>Account</h3>
+      <a class="menu-item" href="login.html">
+        <div class="icon">🔑</div>
+        <div class="text">
+          <b>Login / Sign Up</b>
+          <small>Switch account or register</small>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+      <div class="menu-item" onclick="logout()" style="cursor:pointer;">
+        <div class="icon" style="background:#fef2f2;">🚪</div>
+        <div class="text">
+          <b style="color:#ef4444;">Logout</b>
+          <small>Sign out from this device</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html">⌂<span>Home</span></a>
+    <a href="index.html#queue">🚜<span>Procurement</span></a>
+    <a href="index.html#advisory">🌿<span>Advisory</span></a>
+    <a href="index.html#horticulture">📖<span>Learn</span></a>
+    <a href="profile.html" class="active">◯<span>Profile</span></a>
+  </nav>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQ3YK7r5lSvN6NzDNMsgVJ9nMLVKCrikI",
+      authDomain: "rentkarin-ce60d.firebaseapp.com",
+      projectId: "rentkarin-ce60d",
+      storageBucket: "rentkarin-ce60d.appspot.com",
+      messagingSenderId: "586594013175",
+      appId: "1:586594013175:web:bed29302743adc8bb7e8f2"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    if (typeof SK_DB !== 'undefined') SK_DB.init();
+
+    auth.onAuthStateChanged((user) => {
+      const nameEl = document.getElementById('profileName');
+      const emailEl = document.getElementById('profileEmail');
+      if (user) {
+        var prev = localStorage.getItem('sk_auth_uid');
+        if (prev && prev !== user.uid) clearBookingLocalStorage();
+        localStorage.setItem('sk_auth_uid', user.uid);
+        nameEl.textContent = user.displayName || localStorage.getItem('farmerName') || 'Farmer';
+        emailEl.textContent = user.email || 'Logged in';
+        localStorage.setItem('farmerName', user.displayName || 'Farmer');
+        // Restore bookings from Firestore after login
+        if (typeof SK_DB !== 'undefined' && SK_DB.restoreUserBookings) {
+          SK_DB.restoreUserBookings(user.uid).then(function (rec) {
+            const token = localStorage.getItem('kycToken');
+            const statusEl = document.getElementById('kycStatusText');
+            if (statusEl) {
+              if (token) statusEl.textContent = 'Token: ' + token + ' (Booked)';
+              else statusEl.textContent = 'No active slot';
+            }
+            if (rec && rec.farmerName) {
+              nameEl.textContent = rec.farmerName;
+              localStorage.setItem('farmerName', rec.farmerName);
+            }
+          }).catch(function () {});
+        }
+      } else {
+        clearBookingLocalStorage();
+        nameEl.textContent = 'Farmer';
+        emailEl.textContent = 'Not logged in';
+      }
+
+      const token = localStorage.getItem('kycToken');
+      const statusEl = document.getElementById('kycStatusText');
+      if (token) {
+        statusEl.textContent = 'Token: ' + token + ' (Booked)';
+      } else {
+        statusEl.textContent = 'No active slot';
+      }
+    });
+
+    function clearBookingLocalStorage() {
+      var keys = [
+        'kycToken','kycShortToken','kycDate','kycPaid','kycStatus','kycArchived',
+        'kycVerified','sk_last_booking','sk_all_bookings','sk_fresh_booking',
+        'sk_slot_history','razorpay_payment_id','sk_token_serial',
+        'sk_booking_type','sk_kyc_token','sk_kyc_short','sk_kyc_date','sk_auth_uid'
+      ];
+      keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    }
+
+    function logout() {
+      if (!confirm('Do you want to logout?')) return;
+      auth.signOut().then(() => {
+        clearBookingLocalStorage();
+        localStorage.removeItem('farmerName');
+        localStorage.removeItem('sk_user_role');
+        localStorage.removeItem('sk_op_authed');
+        sessionStorage.removeItem('sk_staff_pin_ok');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

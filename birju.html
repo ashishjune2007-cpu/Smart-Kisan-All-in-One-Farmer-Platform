@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ask Birju — Smart Kisan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --forest:#1F7A3D;
+    --forest-dark:#155C2C;
+    --apple:#E14D3A;
+    --apple-dark:#C43B2A;
+    --cream:#FBF6EC;
+    --sage:#EAF3E1;
+    --ink:#26321F;
+    --ink-soft:#5B6555;
+    --gold:#F2B705;
+    --line:#DCE6D2;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:'Inter',sans-serif;
+    background:#EFEAE0;
+  }
+
+  /* ---------- page behind the widget, just for context ---------- */
+  .backdrop{
+    position:fixed; inset:0;
+    background: radial-gradient(circle at 20% 15%, #F3EEDF 0%, #EFEAE0 55%, #E7E0CF 100%);
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:40px;
+  }
+  .backdrop h1{
+    font-family:'Baloo 2', sans-serif;
+    color:var(--forest-dark);
+    font-size:28px; margin:0 0 8px;
+  }
+  .backdrop p{ color:var(--ink-soft); max-width:360px; margin:0 auto; line-height:1.5; font-size:14px;}
+
+  /* ---------- launcher ---------- */
+  #launcher{
+    position:fixed; right:26px; bottom:26px;
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; z-index:60;
+  }
+  #launcher .bubble{
+    background:var(--forest);
+    color:#fff;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:600; font-size:15px;
+    padding:10px 16px; border-radius:16px 16px 4px 16px;
+    box-shadow:0 8px 20px rgba(21,92,44,.28);
+    white-space:nowrap;
+  }
+  #launcher .face{
+    width:60px; height:60px; border-radius:50%;
+    background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+    animation: bob 2.6s ease-in-out infinite;
+  }
+  #launcher .face svg{ width:42px; height:42px; }
+  @keyframes bob{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-6px); }
+  }
+
+  /* ---------- chat panel ---------- */
+  #panel{
+    position:fixed; right:26px; bottom:26px;
+    width:368px; height:560px;
+    background:var(--cream);
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    opacity:0; transform:translateY(24px) scale(.98);
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:70;
+  }
+  #panel.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+  #panel header{
+    background:linear-gradient(135deg, var(--forest) 0%, var(--forest-dark) 100%);
+    color:#fff;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:10px;
+    flex-shrink:0;
+  }
+  #panel header .avatar{
+    width:38px; height:38px; border-radius:50%;
+    background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  #panel header .avatar svg{ width:26px; height:26px; }
+  #panel header .titles{ flex:1; line-height:1.25; }
+  #panel header .titles .name{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:17px; }
+  #panel header .titles .tag{ font-size:11.5px; opacity:.85; }
+  #panel header .min-btn{
+    width:26px; height:26px; border-radius:50%;
+    background:rgba(255,255,255,.18);
+    color:#fff; border:none; cursor:pointer;
+    font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #lang-btn{
+    height:26px; min-width:26px; border-radius:13px;
+    background:rgba(255,255,255,.18);
+    color:#fff; border:1px solid rgba(255,255,255,.4); cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:11.5px;
+    padding:0 9px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    transition:background .15s;
+  }
+  #lang-btn:hover{ background:rgba(255,255,255,.3); }
+
+  #thread{
+    flex:1; overflow-y:auto;
+    padding:16px 14px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  #thread::-webkit-scrollbar{ width:6px; }
+  #thread::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
+
+  .row{ display:flex; gap:8px; align-items:flex-end; }
+  .row.user{ justify-content:flex-end; }
+  .row .mini-avatar{
+    width:26px; height:26px; border-radius:50%;
+    background:var(--sage); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .row .mini-avatar svg{ width:18px; height:18px; }
+
+  .bubble-msg{
+    max-width:74%;
+    font-size:13.5px; line-height:1.45;
+    padding:9px 12px;
+    border-radius:14px;
+  }
+  .row.bot .bubble-msg{
+    background:#fff; color:var(--ink);
+    border:1px solid var(--line);
+    border-bottom-left-radius:4px;
+  }
+  .row.user .bubble-msg{
+    background:var(--forest); color:#fff;
+    border-bottom-right-radius:4px;
+  }
+
+  .typing{
+    display:flex; gap:4px; padding:10px 12px;
+    background:#fff; border:1px solid var(--line);
+    border-radius:14px; border-bottom-left-radius:4px;
+    width:fit-content;
+  }
+  .typing span{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--ink-soft); opacity:.5;
+    animation:blink 1.2s infinite;
+  }
+  .typing span:nth-child(2){ animation-delay:.2s; }
+  .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,80%,100%{opacity:.25;} 40%{opacity:.9;} }
+
+  .pills{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin:2px 0 2px 34px;
+  }
+  .pill{
+    border:1.5px solid var(--forest);
+    color:var(--forest-dark);
+    background:#fff;
+    padding:7px 12px;
+    border-radius:999px;
+    font-size:12.5px; font-weight:600;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .pill:hover{ background:var(--forest); color:#fff; }
+  .pill.alt{ border-color:var(--apple); color:var(--apple-dark); }
+  .pill.alt:hover{ background:var(--apple); color:#fff; }
+
+  #inputbar{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px;
+    border-top:1px solid var(--line);
+    background:#fff;
+    flex-shrink:0;
+  }
+  #inputbar input{
+    flex:1; border:1px solid var(--line);
+    background:var(--cream);
+    border-radius:999px;
+    padding:9px 14px;
+    font-size:13px; font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  #inputbar input:focus{ border-color:var(--forest); }
+  #inputbar button{
+    width:34px; height:34px; border-radius:50%;
+    border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  #mic-btn{ background:var(--sage); color:var(--forest-dark); }
+  #send-btn{ background:var(--apple); color:#fff; }
+  #inputbar button svg{ width:16px; height:16px; }
+</style>
+</head>
+<body>
+
+<div class="backdrop">
+  <div>
+    <h1>Smart Kisan</h1>
+    <p>Click the "Ask Birju" bubble in the corner to try the chatbot — it follows the same seed, fertilizer, irrigation, schemes, horticulture, procurement and mandi-rate flow as the Python version, in a chat widget. Use the हिं / EN button in the chat header to switch languages.</p>
+  </div>
+</div>
+
+<!-- Launcher -->
+<div id="launcher" onclick="openPanel()">
+  <div class="bubble">Ask Birju</div>
+  <div class="face"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Birju mascot">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg></div>
+</div>
+
+<!-- Chat panel -->
+<div id="panel">
+  <header>
+    <div class="avatar"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Birju mascot">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg></div>
+    <div class="titles">
+      <div class="name">Birju</div>
+      <div class="tag" id="header-tag">Your Smart Kisan buddy</div>
+    </div>
+    <button id="lang-btn" onclick="toggleLang()" title="Switch language / भाषा बदलें">हिं</button>
+    <button class="min-btn" onclick="closePanel()">–</button>
+  </header>
+
+  <div id="thread"></div>
+
+  <div id="inputbar">
+    <input id="textbox" type="text" placeholder="Type your query here..." onkeydown="if(event.key==='Enter') sendTyped()" lang="en">
+    <button id="mic-btn" title="Voice (not wired up in this preview)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z"/><path d="M19 11a1 1 0 00-2 0 5 5 0 01-10 0 1 1 0 00-2 0 7 7 0 006 6.92V20H9a1 1 0 000 2h6a1 1 0 000-2h-2v-2.08A7 7 0 0019 11z"/></svg>
+    </button>
+    <button id="send-btn" onclick="sendTyped()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2v6z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ---------------- cute apple mascot (reused everywhere) ---------------- */
+const APPLE_SVG = `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg>`;
+document.getElementById('launcher').querySelector('.face').innerHTML = APPLE_SVG;
+
+document.querySelector('#panel header .avatar').innerHTML = APPLE_SVG;
+
+/* ---------------- panel open/close ---------------- */
+const panel = document.getElementById('panel');
+const launcher = document.getElementById('launcher');
+function openPanel(){
+  panel.classList.add('open');
+  launcher.style.display = 'none';
+  if(thread.childElementCount === 0) startConversation();
+}
+function closePanel(){
+  panel.classList.remove('open');
+  launcher.style.display = 'flex';
+}
+
+/* ---------------- language toggle ---------------- */
+let lang = 'en';
+
+function applyStaticLangText(){
+  document.getElementById('lang-btn').textContent = (lang === 'en') ? 'हिं' : 'EN';
+  document.getElementById('header-tag').textContent = (lang === 'en')
+    ? 'Your Smart Kisan buddy' : 'आपका स्मार्ट किसान साथी';
+  const box = document.getElementById('textbox');
+  box.placeholder = (lang === 'en') ? 'Type your query here...' : 'यहां अपना सवाल लिखें...';
+  box.lang = lang;
+}
+
+function toggleLang(){
+  lang = (lang === 'en') ? 'hi' : 'en';
+  applyStaticLangText();
+  // Restart the conversation cleanly in the newly selected language so the
+  // whole procedure (greeting, menu, prompts, conditions) is consistent.
+  thread.innerHTML = '';
+  state = 'MENU';
+  lastCropKey = null;
+  tempLocation = null;
+  startConversation();
+}
+
+/* ---------------- chat rendering helpers ---------------- */
+const thread = document.getElementById('thread');
+
+function scrollDown(){ thread.scrollTop = thread.scrollHeight; }
+
+function botMessage(text, delay=450){
+  const typingRow = document.createElement('div');
+  typingRow.className = 'row bot';
+  typingRow.innerHTML = `<div class="mini-avatar">${APPLE_SVG}</div><div class="typing"><span></span><span></span><span></span></div>`;
+  thread.appendChild(typingRow);
+  scrollDown();
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      typingRow.remove();
+      const row = document.createElement('div');
+      row.className = 'row bot';
+      row.innerHTML = `<div class="mini-avatar">${APPLE_SVG}</div><div class="bubble-msg">${text}</div>`;
+      thread.appendChild(row);
+      scrollDown();
+      resolve();
+    }, delay);
+  });
+}
+
+function userMessage(text){
+  const row = document.createElement('div');
+  row.className = 'row user';
+  row.innerHTML = `<div class="bubble-msg"></div>`;
+  row.querySelector('.bubble-msg').textContent = text;
+  thread.appendChild(row);
+  scrollDown();
+}
+
+function showPills(options, cls=''){
+  const wrap = document.createElement('div');
+  wrap.className = 'pills';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className = 'pill ' + cls;
+    b.textContent = opt;
+    b.onclick = ()=>{ wrap.remove(); userMessage(opt); handleInput(opt); };
+    wrap.appendChild(b);
+  });
+  thread.appendChild(wrap);
+  scrollDown();
+}
+
+/* ---------------- conversation state (mirrors the Python if-elif logic) ---------------- */
+let state = 'MENU';
+let lastCropKey = null;
+let tempLocation = null;
+
+/* ---------------- bilingual text table ---------------- */
+const T = {
+  en: {
+    greet1: "Hello hello, sir. Hello, hello, sir/ma'am. How may I help you?",
+    greet2: "Here's what I can help with — pick one, or just type it below.",
+    menu: [
+      '🌱 Seed selection',
+      '🧪 Fertilizer help',
+      '💧 Drip irrigation & water',
+      '🏛️ Schemes for you',
+      '📚 Learn horticulture',
+      '🚜 Procurement tracking',
+      '🌤️ Mandi rate & weather'
+    ],
+    askLocation: "Sure, could you tell me your location?",
+    askSoil: "And how would you describe your soil quality? (e.g. sandy, loamy, clayey, semi-dry, medium dry)",
+    seedResult: (location, soil, seedDisplay) => `Based on <b>${location}</b> and '<i>${soil}</i>' soil, I'd suggest <b>${seedDisplay}</b>.`,
+    seedReason: (reason) => `Reason — ${reason}.`,
+    thanks: "Hope it helped! Thank you. 🙏",
+    fertOffer: (cropName) => `Sir/Ma'am, can I offer you fertilizer suggestions for your ${cropName} crop?`,
+    yesNo: ['Yes, please', 'No, thanks'],
+    fertResult: (crop, fert) => `For your ${crop}, use — ${fert}.`,
+    noProblem: "No problem, let me know if you need anything else.",
+    anythingElse: "Anything else I can help with?",
+    whichCropFert: "Which crop do you need fertilizer advice for?",
+    cropList: ['Wheat','Mustard','Paddy','Soybean','Jowar','Bajra','Ragi','Groundnut','Barley','Maize'],
+    fallback: "Sorry, I didn't catch that. Please pick one of the options below.",
+    irrigationInfo: "Drip irrigation & water planning —<br>• Up to 55% subsidy under PMKSY<br>• Saves 30–50% water vs flood irrigation<br>• Best for cotton, sugarcane, vegetables, orchards<br>• Apply via your Agriculture Dept. office or CSC",
+    schemesInfo: "Schemes you may benefit from —<br>• <b>PM-KISAN</b>: ₹6,000/year direct benefit<br>• <b>PMFBY</b>: subsidised crop insurance<br>• <b>PMKSY</b>: up to 55% drip/sprinkler subsidy<br>• <b>KCC</b>: low-interest crop loans",
+    horticultureInfo: "Horticulture learning topics —<br>• Vegetable farming<br>• Fruit farming<br>• Nursery management<br>• Drip irrigation for orchards<br>• Pest management (bio-pesticides, sticky & pheromone traps)",
+    procurementInfo: "Procurement booking & tracking —<br>• Book your slot to avoid long queues<br>• Track live: Weighed → Quality Check → Accepted → Payment<br>• You'll get SMS/app alerts as your status updates",
+    mandiWeatherInfo: "Mandi rate & weather for sowing —<br>• Wheat ₹2,450 · Paddy ₹2,180 · Mustard ₹5,620 (per quintal)<br>• Clear today, light rain expected Tuesday — avoid spraying<br>• Prices update every hour",
+  },
+  hi: {
+    greet1: "नमस्ते नमस्ते जी। नमस्ते, नमस्ते सर/मैडम। मैं आपकी क्या मदद कर सकता हूं?",
+    greet2: "यहां वे विषय हैं जिनमें मैं मदद कर सकता हूं — एक चुनें, या नीचे टाइप करें।",
+    menu: [
+      '🌱 बीज चयन',
+      '🧪 उर्वरक सहायता',
+      '💧 ड्रिप सिंचाई और पानी',
+      '🏛️ आपके लिए योजनाएं',
+      '📚 बागवानी सीखें',
+      '🚜 खरीद ट्रैकिंग',
+      '🌤️ मंडी भाव और मौसम'
+    ],
+    askLocation: "जरूर, क्या आप मुझे अपना स्थान बता सकते हैं?",
+    askSoil: "और आप अपनी मिट्टी की गुणवत्ता का वर्णन कैसे करेंगे? (जैसे बलुई, दोमट, चिकनी, अर्ध-शुष्क, मध्यम सूखी)",
+    seedResult: (location, soil, seedDisplay) => `<b>${location}</b> और '<i>${soil}</i>' मिट्टी के आधार पर, मैं <b>${seedDisplay}</b> सुझाऊंगा।`,
+    seedReason: (reason) => `कारण — ${reason}।`,
+    thanks: "उम्मीद है इससे मदद मिली! धन्यवाद। 🙏",
+    fertOffer: (cropName) => `सर/मैडम, क्या मैं आपकी ${cropName} फसल के लिए उर्वरक सुझाव दूं?`,
+    yesNo: ['हां, बताएं', 'नहीं, धन्यवाद'],
+    fertResult: (crop, fert) => `आपकी ${crop} के लिए, उपयोग करें — ${fert}।`,
+    noProblem: "कोई बात नहीं, अगर कुछ और चाहिए तो बताइएगा।",
+    anythingElse: "क्या मैं किसी और चीज़ में मदद कर सकता हूं?",
+    whichCropFert: "आपको किस फसल के लिए उर्वरक सलाह चाहिए?",
+    cropList: ['गेहूं','सरसों','धान','सोयाबीन','ज्वार','बाजरा','रागी','मूंगफली','जौ','मक्का'],
+    fallback: "माफ कीजिए, मैं समझ नहीं पाया। कृपया नीचे दिए गए विकल्पों में से एक चुनें।",
+    irrigationInfo: "ड्रिप सिंचाई और जल प्रबंधन —<br>• PMKSY के तहत 55% तक सब्सिडी<br>• बाढ़ सिंचाई की तुलना में 30–50% पानी की बचत<br>• कपास, गन्ना, सब्जियों और बागों के लिए सर्वोत्तम<br>• अपने कृषि विभाग कार्यालय या CSC के माध्यम से आवेदन करें",
+    schemesInfo: "जिन योजनाओं से आपको लाभ हो सकता है —<br>• <b>पीएम-किसान</b>: ₹6,000/वर्ष प्रत्यक्ष लाभ<br>• <b>पीएमएफबीवाई</b>: सब्सिडी वाला फसल बीमा<br>• <b>पीएमकेएसवाई</b>: ड्रिप/स्प्रिंकलर पर 55% तक सब्सिडी<br>• <b>केसीसी</b>: कम ब्याज दर पर फसल ऋण",
+    horticultureInfo: "बागवानी से जुड़े सीखने के विषय —<br>• सब्जी की खेती<br>• फल की खेती<br>• नर्सरी प्रबंधन<br>• बागों के लिए ड्रिप सिंचाई<br>• कीट प्रबंधन (जैव-कीटनाशक, चिपचिपा व फेरोमोन ट्रैप)",
+    procurementInfo: "खरीद बुकिंग और ट्रैकिंग —<br>• लंबी कतार से बचने के लिए अपना स्लॉट बुक करें<br>• लाइव ट्रैक करें: तौल → गुणवत्ता जांच → स्वीकृत → भुगतान<br>• स्थिति अपडेट होने पर आपको SMS/ऐप अलर्ट मिलेंगे",
+    mandiWeatherInfo: "बुवाई के लिए मंडी भाव और मौसम —<br>• गेहूं ₹2,450 · धान ₹2,180 · सरसों ₹5,620 (प्रति क्विंटल)<br>• आज साफ मौसम, मंगलवार को हल्की बारिश की संभावना — छिड़काव न करें<br>• भाव हर घंटे अपडेट होते हैं",
+  }
+};
+
+async function startConversation(){
+  const t = T[lang];
+  await botMessage(t.greet1);
+  await botMessage(t.greet2, 300);
+  showPills(t.menu);
+}
+
+/* ---- seed recommendation: soil texture drives the crop, region only sets
+      the fallback (for unrecognised soil text) and variety flavour.
+      Keyword lists include both English and Hindi (Devanagari) terms so the
+      same conditions work no matter which language the farmer types in. ---- */
+function classifyRegion(location){
+  if(['noida','delhi','meerut','ghaziabad','up','uttar pradesh','punjab','haryana','bihar','west bengal','lucknow','kanpur','patna','kolkata',
+      'उत्तर प्रदेश','पंजाब','हरियाणा','बिहार','दिल्ली','नोएडा','गाज़ियाबाद','गाजियाबाद','लखनऊ','कानपुर','पटना','कोलकाता'].some(k=>location.includes(k))) return 'north';
+  if(['maharashtra','madhya pradesh',' mp','chhattisgarh','pune','nagpur','bhopal','indore',
+      'महाराष्ट्र','मध्य प्रदेश','छत्तीसगढ़','पुणे','नागपुर','भोपाल','इंदौर'].some(k=>location.includes(k))) return 'deccan';
+  if(['karnataka','tamil nadu','andhra','telangana','kerala','bangalore','bengaluru','chennai','hyderabad',
+      'कर्नाटक','तमिलनाडु','आंध्र','तेलंगाना','केरल','बेंगलुरु','बैंगलोर','चेन्नई','हैदराबाद'].some(k=>location.includes(k))) return 'south';
+  if(['gujarat','ahmedabad','surat','vadodara','गुजरात','अहमदाबाद','सूरत','वडोदरा'].some(k=>location.includes(k))) return 'west';
+  if(['rajasthan','jaipur','jodhpur','bikaner','राजस्थान','जयपुर','जोधपुर','बीकानेर'].some(k=>location.includes(k))) return 'arid';
+  return 'general';
+}
+
+function classifySoil(soil){
+  if(soil.includes('black') || soil.includes('cotton') || soil.includes('काली')) return 'black';
+  if(soil.includes('laterite') || soil.includes('लेटराइट')) return 'laterite';
+  if(soil.includes('red') || soil.includes('लाल')) return 'red';
+  if(soil.includes('saline') || soil.includes('alkaline') || soil.includes('खारी') || soil.includes('क्षारीय')) return 'saline';
+  if(soil.includes('sandy') || soil.includes('sand') || soil.includes('बलुई') || soil.includes('रेतीली') || soil.includes('रेतीला')) return 'sandy';
+  if(soil.includes('clay') || soil.includes('चिकनी')) return 'clay';
+  if(soil.includes('silt') || soil.includes('सिल्ट')) return 'silty';
+  if(soil.includes('loam') || soil.includes('दोमट')) return 'loamy';
+  if(soil.includes('alluvial') || soil.includes('जलोढ़') || soil.includes('जलोढ')) return 'alluvial';
+  if(soil.includes('semi') || soil.includes('medium') || soil.includes('अर्ध') || soil.includes('मध्यम')) return 'semi_dry';
+  if(soil.includes('dry') || soil.includes('arid') || soil.includes('सूखी') || soil.includes('सूखा') || soil.includes('शुष्क')) return 'dry';
+  if(soil.includes('moist') || soil.includes('wet') || soil.includes('water') || soil.includes('नम') || soil.includes('गीली') || soil.includes('गीला')) return 'moist';
+  return 'unknown';
+}
+
+const REGION_DEFAULT = {
+  en: {
+    north:   ['wheat',     'Wheat (general recommendation)',   'wheat is the dominant Rabi crop across the northern plains'],
+    deccan:  ['jowar',     'Jowar / Sorghum',                   'a hardy crop that performs well across mixed Deccan soils'],
+    south:   ['ragi',      'Ragi (Finger millet)',              "ragi is a reliable, low-maintenance staple across southern soils"],
+    west:    ['groundnut', 'Groundnut (TAG-24 variety)',        "groundnut is a common, well-suited crop for Gujarat's soils"],
+    arid:    ['bajra',     'Bajra (Pearl millet)',              'bajra is drought-tolerant and thrives in arid conditions'],
+    general: ['maize',     'Maize (hybrid variety)',            'maize is a flexible crop that adapts to most soil types — get a soil test for a more exact match'],
+  },
+  hi: {
+    north:   ['wheat',     'गेहूं (सामान्य सिफारिश)',            'उत्तरी मैदानी क्षेत्र में गेहूं प्रमुख रबी फसल है'],
+    deccan:  ['jowar',     'ज्वार',                              'यह एक मजबूत फसल है जो दक्कन की मिश्रित मिट्टी में अच्छी तरह उगती है'],
+    south:   ['ragi',      'रागी (मंडुआ)',                       'रागी दक्षिणी मिट्टी के लिए एक भरोसेमंद, कम रखरखाव वाली फसल है'],
+    west:    ['groundnut', 'मूंगफली (टीएजी-24 किस्म)',           'मूंगफली गुजरात की मिट्टी के लिए एक आम और उपयुक्त फसल है'],
+    arid:    ['bajra',     'बाजरा',                              'बाजरा सूखा-सहिष्णु है और शुष्क परिस्थितियों में अच्छी तरह पनपता है'],
+    general: ['maize',     'मक्का (संकर किस्म)',                 'मक्का एक लचीली फसल है जो अधिकांश मिट्टी के प्रकारों के अनुकूल होती है — सटीक सुझाव के लिए मिट्टी की जांच करवाएं'],
+  }
+};
+
+const SOIL_CROP = {
+  en: {
+    black:    ['soybean',  'Soybean (JS-335 variety)',      'black cotton soil retains moisture well and suits soybean'],
+    red:      ['groundnut','Groundnut (TAG-24 variety)',    'red soil drains well, which groundnut prefers'],
+    laterite: ['ragi',     'Ragi (Finger millet)',          'laterite soil is low in fertility, and ragi tolerates that well'],
+    saline:   ['barley',   'Barley',                        'barley handles salinity better than wheat'],
+    sandy:    ['bajra',    'Bajra (Pearl millet)',          'bajra thrives in sandy, drought-prone soil'],
+    clay:     ['paddy',    'Paddy (Basmati-1509 variety)',  'clayey soil retains water well, which paddy needs'],
+    silty:    ['maize',    'Maize (hybrid variety)',        'silty soil drains moderately and suits maize'],
+    loamy:    ['wheat',    'Wheat (HD-2967 variety)',       'loamy soil is the most balanced soil type, ideal for wheat'],
+    alluvial: ['wheat',    'Wheat (HD-3086 variety)',       'fertile alluvial soil is well suited to wheat'],
+    semi_dry: ['mustard',  'Mustard (Pusa Bold variety)',   'semi-dry soil suits mustard, which needs less water than wheat'],
+    dry:      ['bajra',    'Bajra (Pearl millet)',          'dry soil favours drought-tolerant bajra'],
+    moist:    ['paddy',    'Paddy (Basmati-1509 variety)',  'moist, water-retentive soil is ideal for paddy'],
+  },
+  hi: {
+    black:    ['soybean',  'सोयाबीन (जेएस-335 किस्म)',            'काली कपास मिट्टी नमी अच्छी तरह बनाए रखती है, जो सोयाबीन के लिए उपयुक्त है'],
+    red:      ['groundnut','मूंगफली (टीएजी-24 किस्म)',            'लाल मिट्टी का जल निकास अच्छा होता है, जो मूंगफली के लिए पसंदीदा है'],
+    laterite: ['ragi',     'रागी (मंडुआ)',                        'लेटराइट मिट्टी में उर्वरता कम होती है, और रागी इसे अच्छी तरह सहन करती है'],
+    saline:   ['barley',   'जौ',                                  'जौ गेहूं की तुलना में लवणता को बेहतर तरीके से सहन करता है'],
+    sandy:    ['bajra',    'बाजरा',                               'बाजरा बलुई, सूखा-प्रवण मिट्टी में अच्छी तरह पनपता है'],
+    clay:     ['paddy',    'धान (बासमती-1509 किस्म)',             'चिकनी मिट्टी पानी को अच्छी तरह रोके रखती है, जो धान के लिए आवश्यक है'],
+    silty:    ['maize',    'मक्का (संकर किस्म)',                  'सिल्ट मिट्टी में मध्यम जल निकास होता है, जो मक्का के लिए उपयुक्त है'],
+    loamy:    ['wheat',    'गेहूं (एचडी-2967 किस्म)',             'दोमट मिट्टी सबसे संतुलित मिट्टी प्रकार है, जो गेहूं के लिए आदर्श है'],
+    alluvial: ['wheat',    'गेहूं (एचडी-3086 किस्म)',             'उपजाऊ जलोढ़ मिट्टी गेहूं के लिए बहुत उपयुक्त है'],
+    semi_dry: ['mustard',  'सरसों (पूसा बोल्ड किस्म)',            'अर्ध-शुष्क मिट्टी सरसों के लिए उपयुक्त है, जिसे गेहूं से कम पानी चाहिए'],
+    dry:      ['bajra',    'बाजरा',                               'सूखी मिट्टी सूखा-सहिष्णु बाजरा के लिए अनुकूल है'],
+    moist:    ['paddy',    'धान (बासमती-1509 किस्म)',             'नम, जल धारण करने वाली मिट्टी धान के लिए आदर्श है'],
+  }
+};
+
+/* Crop key -> display name in each language, used whenever we need to show
+   just the crop name (e.g. "For your <crop>, use ...") */
+const CROP_NAME = {
+  en: { wheat:'wheat', mustard:'mustard', paddy:'paddy', soybean:'soybean', jowar:'jowar', bajra:'bajra', ragi:'ragi', groundnut:'groundnut', barley:'barley', maize:'maize' },
+  hi: { wheat:'गेहूं', mustard:'सरसों', paddy:'धान', soybean:'सोयाबीन', jowar:'ज्वार', bajra:'बाजरा', ragi:'रागी', groundnut:'मूंगफली', barley:'जौ', maize:'मक्का' }
+};
+
+/* Recognise a crop name typed (or tapped from a pill) in EITHER language and
+   map it back to the internal crop key used by getFertilizerRecommendation. */
+const CROP_KEYWORDS = {
+  wheat:     ['wheat','गेहूं','गेहू'],
+  mustard:   ['mustard','सरसों','सरसो'],
+  paddy:     ['paddy','rice','धान','चावल'],
+  soybean:   ['soybean','सोयाबीन'],
+  jowar:     ['jowar','sorghum','ज्वार'],
+  bajra:     ['bajra','pearl millet','बाजरा'],
+  ragi:      ['ragi','finger millet','रागी','मंडुआ'],
+  groundnut: ['groundnut','peanut','मूंगफली'],
+  barley:    ['barley','जौ'],
+  maize:     ['maize','corn','मक्का'],
+};
+function normalizeCropKey(raw){
+  const t = raw.toLowerCase().trim();
+  for(const key in CROP_KEYWORDS){
+    if(CROP_KEYWORDS[key].some(w => t.includes(w.toLowerCase()))) return key;
+  }
+  return t;
+}
+
+function getSeedRecommendation(locationRaw, soilRaw){
+  const location = locationRaw.toLowerCase();
+  const soil = soilRaw.toLowerCase();
+  const region = classifyRegion(location);
+  const soilCategory = classifySoil(soil);
+
+  const [cropKey, seedDisplay, reason] = soilCategory === 'unknown'
+    ? REGION_DEFAULT[lang][region]
+    : SOIL_CROP[lang][soilCategory];
+
+  return {seedDisplay, cropKey, reason};
+}
+
+function getFertilizerRecommendation(cropKey){
+  const fert = {
+    en: {
+      wheat:     'DAP 100 kg/acre at sowing + Urea 50 kg/acre in 2 splits + light Potash (MOP) 20 kg/acre',
+      mustard:   'DAP 50 kg/acre at sowing + Urea 25 kg/acre after 30 days + Sulphur for better oil content',
+      paddy:     'Urea in 3 splits (basal, tillering, panicle stage) + DAP at transplanting + Zinc Sulphate if soil is deficient',
+      soybean:   'Light DAP basal dose only — soybean fixes its own nitrogen, so avoid excess Urea',
+      jowar:     'Urea 40 kg/acre in 2 splits + DAP 20 kg/acre at sowing',
+      bajra:     'Urea 20 kg/acre + DAP 15 kg/acre — works well even in sandy, low-fertility soil',
+      ragi:      'Urea 20 kg/acre in 2 splits + DAP 15 kg/acre at sowing — ragi needs very little fertilizer',
+      groundnut: 'Light DAP + Gypsum (250 kg/acre) at flowering for better pods — avoid excess nitrogen',
+      barley:    'Urea 40 kg/acre in 2 splits + DAP 25 kg/acre — keep nitrogen moderate on saline soil',
+      maize:     'Urea 50 kg/acre in 3 splits + DAP 30 kg/acre at sowing + Zinc Sulphate for better yield',
+      default:   'A balanced NPK dose is recommended — please consult your nearest Krishi Vigyan Kendra for exact quantities',
+    },
+    hi: {
+      wheat:     'बुवाई के समय डीएपी 100 किग्रा/एकड़ + यूरिया 50 किग्रा/एकड़ 2 भागों में + हल्की पोटाश (एमओपी) 20 किग्रा/एकड़',
+      mustard:   'बुवाई के समय डीएपी 50 किग्रा/एकड़ + 30 दिन बाद यूरिया 25 किग्रा/एकड़ + बेहतर तेल सामग्री के लिए सल्फर',
+      paddy:     '3 भागों में यूरिया (आधार, कल्ले फूटते समय, बाली निकलते समय) + रोपाई के समय डीएपी + मिट्टी में कमी होने पर जिंक सल्फेट',
+      soybean:   'केवल हल्की डीएपी आधार खुराक — सोयाबीन खुद नाइट्रोजन स्थिर करता है, इसलिए अधिक यूरिया से बचें',
+      jowar:     '2 भागों में यूरिया 40 किग्रा/एकड़ + बुवाई के समय डीएपी 20 किग्रा/एकड़',
+      bajra:     'यूरिया 20 किग्रा/एकड़ + डीएपी 15 किग्रा/एकड़ — बलुई, कम उर्वरता वाली मिट्टी में भी अच्छा काम करता है',
+      ragi:      '2 भागों में यूरिया 20 किग्रा/एकड़ + बुवाई के समय डीएपी 15 किग्रा/एकड़ — रागी को बहुत कम उर्वरक चाहिए',
+      groundnut: 'हल्की डीएपी + फूल आने पर बेहतर फली के लिए जिप्सम (250 किग्रा/एकड़) — अधिक नाइट्रोजन से बचें',
+      barley:    '2 भागों में यूरिया 40 किग्रा/एकड़ + डीएपी 25 किग्रा/एकड़ — खारी मिट्टी में नाइट्रोजन मध्यम रखें',
+      maize:     '3 भागों में यूरिया 50 किग्रा/एकड़ + बुवाई के समय डीएपी 30 किग्रा/एकड़ + बेहतर उपज के लिए जिंक सल्फेट',
+      default:   'संतुलित एनपीके खुराक की सिफारिश की जाती है — कृपया सटीक मात्रा के लिए अपने निकटतम कृषि विज्ञान केंद्र से संपर्क करें',
+    }
+  };
+  const table = fert[lang];
+  return table[cropKey] || table.default;
+}
+
+/* ---------------- bilingual keyword sets for the MENU dispatcher ---------------- */
+const KEYWORDS = {
+  seed:        ['seed','बीज'],
+  fertilizer:  ['fertilizer','उर्वरक','खाद'],
+  irrigation:  ['drip','irrigation','water','सिंचाई','पानी','ड्रिप'],
+  scheme:      ['scheme','योजना'],
+  horticulture:['horticulture','learn','बागवानी','सीख'],
+  procurement: ['procurement','track','book','खरीद','ट्रैक','बुक'],
+  mandi:       ['mandi','weather','sowing','मंडी','मौसम','बुवाई'],
+  yes:         ['yes','sure','ok','हां','हाँ','ठीक'],
+};
+function matches(text, key){
+  return KEYWORDS[key].some(k => text.includes(k));
+}
+
+/* ---------------- main dispatcher (mirrors the Python if/elif chain,
+   now checking conditions in both English and Hindi) ---------------- */
+async function handleInput(raw){
+  const text = raw.toLowerCase().trim();
+  const t = T[lang];
+
+  if(state === 'ASK_LOCATION'){
+    tempLocation = raw;
+    state = 'ASK_SOIL';
+    await botMessage(t.askSoil);
+    return;
+  }
+
+  if(state === 'ASK_SOIL'){
+    const {seedDisplay, cropKey, reason} = getSeedRecommendation(tempLocation, raw);
+    lastCropKey = cropKey;
+    await botMessage(t.seedResult(tempLocation, raw, seedDisplay));
+    await botMessage(t.seedReason(reason), 300);
+    await botMessage(t.thanks, 300);
+    state = 'ASK_FERT_OFFER';
+    const cropName = seedDisplay.split('(')[0].trim();
+    await botMessage(t.fertOffer(cropName), 350);
+    showPills(t.yesNo, 'alt');
+    return;
+  }
+
+  if(state === 'ASK_FERT_OFFER'){
+    if(matches(text, 'yes')){
+      const fert = getFertilizerRecommendation(lastCropKey);
+      await botMessage(t.fertResult(CROP_NAME[lang][lastCropKey] || lastCropKey, fert));
+    } else {
+      await botMessage(t.noProblem);
+    }
+    state = 'MENU';
+    await botMessage(t.anythingElse, 300);
+    showPills(t.menu);
+    return;
+  }
+
+  if(state === 'ASK_FERT_CROP'){
+    const cropKey = normalizeCropKey(raw);
+    const fert = getFertilizerRecommendation(cropKey);
+    await botMessage(t.fertResult(CROP_NAME[lang][cropKey] || raw, fert));
+    state = 'MENU';
+    await botMessage(t.anythingElse, 300);
+    showPills(t.menu);
+    return;
+  }
+
+  /* ---- MENU state: match keywords in either language, same flow as the Python version ---- */
+  if(matches(text, 'seed')){
+    state = 'ASK_LOCATION';
+    await botMessage(t.askLocation);
+  } else if(matches(text, 'fertilizer')){
+    if(lastCropKey){
+      const fert = getFertilizerRecommendation(lastCropKey);
+      await botMessage(t.fertResult(CROP_NAME[lang][lastCropKey] || lastCropKey, fert));
+      await botMessage(t.anythingElse, 300);
+      showPills(t.menu);
+    } else {
+      state = 'ASK_FERT_CROP';
+      await botMessage(t.whichCropFert);
+      showPills(t.cropList, 'alt');
+    }
+  } else if(matches(text, 'irrigation')){
+    await botMessage(t.irrigationInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'scheme')){
+    await botMessage(t.schemesInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'horticulture')){
+    await botMessage(t.horticultureInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'procurement')){
+    await botMessage(t.procurementInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'mandi')){
+    await botMessage(t.mandiWeatherInfo);
+    showPills(t.menu);
+  } else {
+    await botMessage(t.fallback);
+    showPills(t.menu);
+  }
+}
+
+function sendTyped(){
+  const box = document.getElementById('textbox');
+  const val = box.value.trim();
+  if(!val) return;
+  userMessage(val);
+  box.value = '';
+  handleInput(val);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Kisan — All in One Farmer Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20260908-gov8" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore-compat.js"></script>
+  <script src="firebase-db.js"></script>
+<style id="birju-widget-css">
+
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --forest:#1F7A3D;
+    --forest-dark:#155C2C;
+    --apple:#E14D3A;
+    --apple-dark:#C43B2A;
+    --cream:#FBF6EC;
+    --sage:#EAF3E1;
+    --ink:#26321F;
+    --ink-soft:#5B6555;
+    --gold:#F2B705;
+    --line:#DCE6D2;
+  }
+
+
+  /* ---------- page behind the widget, just for context ---------- */
+
+  /* ---------- launcher ---------- */
+  #launcher{
+    position:fixed; right:18px; bottom:90px;
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; z-index:60;
+  }
+  #launcher .bubble{
+    background:var(--forest);
+    color:#fff;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:600; font-size:15px;
+    padding:10px 16px; border-radius:16px 16px 4px 16px;
+    box-shadow:0 8px 20px rgba(21,92,44,.28);
+    white-space:nowrap;
+  }
+  #launcher .face{
+    width:60px; height:60px; border-radius:50%;
+    background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+    animation: bob 2.6s ease-in-out infinite;
+  }
+  #launcher .face svg{ width:42px; height:42px; }
+  @keyframes bob{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-6px); }
+  }
+
+  /* ---------- chat panel ---------- */
+  #panel{
+    position:fixed; right:18px; bottom:90px;
+    width:368px; height:560px;
+    background:var(--cream);
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    opacity:0; transform:translateY(24px) scale(.98);
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:70;
+  }
+  #panel.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+  #panel header{
+    background:linear-gradient(135deg, var(--forest) 0%, var(--forest-dark) 100%);
+    color:#fff;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:10px;
+    flex-shrink:0;
+  }
+  #panel header .avatar{
+    width:38px; height:38px; border-radius:50%;
+    background:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  #panel header .avatar svg{ width:26px; height:26px; }
+  #panel header .titles{ flex:1; line-height:1.25; }
+  #panel header .titles .name{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:17px; }
+  #panel header .titles .tag{ font-size:11.5px; opacity:.85; }
+  #panel header .min-btn{
+    width:26px; height:26px; border-radius:50%;
+    background:rgba(255,255,255,.18);
+    color:#fff; border:none; cursor:pointer;
+    font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #lang-btn{
+    height:26px; min-width:26px; border-radius:13px;
+    background:rgba(255,255,255,.18);
+    color:#fff; border:1px solid rgba(255,255,255,.4); cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:11.5px;
+    padding:0 9px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    transition:background .15s;
+  }
+  #lang-btn:hover{ background:rgba(255,255,255,.3); }
+
+  #thread{
+    flex:1; overflow-y:auto;
+    padding:16px 14px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  #thread::-webkit-scrollbar{ width:6px; }
+  #thread::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
+
+  .row{ display:flex; gap:8px; align-items:flex-end; }
+  .row.user{ justify-content:flex-end; }
+  .row .mini-avatar{
+    width:26px; height:26px; border-radius:50%;
+    background:var(--sage); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .row .mini-avatar svg{ width:18px; height:18px; }
+
+  .bubble-msg{
+    max-width:74%;
+    font-size:13.5px; line-height:1.45;
+    padding:9px 12px;
+    border-radius:14px;
+  }
+  .row.bot .bubble-msg{
+    background:#fff; color:var(--ink);
+    border:1px solid var(--line);
+    border-bottom-left-radius:4px;
+  }
+  .row.user .bubble-msg{
+    background:var(--forest); color:#fff;
+    border-bottom-right-radius:4px;
+  }
+
+  .typing{
+    display:flex; gap:4px; padding:10px 12px;
+    background:#fff; border:1px solid var(--line);
+    border-radius:14px; border-bottom-left-radius:4px;
+    width:fit-content;
+  }
+  .typing span{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--ink-soft); opacity:.5;
+    animation:blink 1.2s infinite;
+  }
+  .typing span:nth-child(2){ animation-delay:.2s; }
+  .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,80%,100%{opacity:.25;} 40%{opacity:.9;} }
+
+  .pills{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin:2px 0 2px 34px;
+  }
+  .pill{
+    border:1.5px solid var(--forest);
+    color:var(--forest-dark);
+    background:#fff;
+    padding:7px 12px;
+    border-radius:999px;
+    font-size:12.5px; font-weight:600;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .pill:hover{ background:var(--forest); color:#fff; }
+  .pill.alt{ border-color:var(--apple); color:var(--apple-dark); }
+  .pill.alt:hover{ background:var(--apple); color:#fff; }
+
+  #inputbar{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px;
+    border-top:1px solid var(--line);
+    background:#fff;
+    flex-shrink:0;
+  }
+  #inputbar input{
+    flex:1; border:1px solid var(--line);
+    background:var(--cream);
+    border-radius:999px;
+    padding:9px 14px;
+    font-size:13px; font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  #inputbar input:focus{ border-color:var(--forest); }
+  #inputbar button{
+    width:34px; height:34px; border-radius:50%;
+    border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  #mic-btn{ background:var(--sage); color:var(--forest-dark); }
+  #send-btn{ background:var(--apple); color:#fff; }
+  #inputbar button svg{ width:16px; height:16px; }
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-emblem" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="23" fill="#0a6b24" stroke="#f4a261" stroke-width="2"/>
+            <path d="M24 10c-4 6-8 10-8 16a8 8 0 0016 0c0-6-4-10-8-16z" fill="#fff"/>
+            <path d="M24 18v12M20 26h8" stroke="#0a6b24" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>SMART KISAN</h1>
+          <span data-i18n="platformTagline">Farmer Services & Procurement Portal</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <select class="lang" id="langBtn" aria-label="Select language">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी</option>
+          <option value="as">অসমীয়া</option>
+          <option value="bn">বাংলা</option>
+          <option value="brx">बड़ो</option>
+          <option value="doi">डोगरी</option>
+          <option value="gu">ગુજરાતી</option>
+          <option value="kn">ಕನ್ನಡ</option>
+          <option value="ks">कॉशुर</option>
+          <option value="kok">कोंकणी</option>
+          <option value="mai">मैथिली</option>
+          <option value="ml">മലയാളം</option>
+          <option value="mr">मराठी</option>
+          <option value="mni">মৈতৈলোন</option>
+          <option value="ne">नेपाली</option>
+          <option value="or">ଓଡ଼ିଆ</option>
+          <option value="pa">ਪੰਜਾਬੀ</option>
+          <option value="sa">संस्कृतम्</option>
+          <option value="sat">ᱥᱟᱱᱛᱟᱲᱤ</option>
+          <option value="sd">سنڌي</option>
+          <option value="ta">தமிழ்</option>
+          <option value="te">తెలుగు</option>
+          <option value="ur">اردو</option>
+        </select>
+        <a href="login.html" class="icon-btn login-link" id="loginBtnTop" title="Login / Sign Up">
+          👤 Login
+        </a>
+        <a href="login.html" class="icon-btn staff-btn" title="Staff / Operator Login" onclick="localStorage.setItem('sk_login_role','operator')">Staff</a>
+        <button class="icon-btn" aria-label="Notifications" data-i18n-aria="notifications" id="notifyBtn">🔔<i></i></button>
+      </div>
+    </header>
+    <div class="gov-strip" aria-hidden="true">
+      <span>Helping farmers with procurement, KYC & advisory services</span>
+      <span class="sep">|</span>
+      <span>Available in 22+ Indian languages</span>
+    </div>
+<div class="live-marquee">
+      <div class="marquee-track">
+        <span>📡 LIVE: Procurement vehicle UP-16-AB-4521 is 4.8 km away • ETA 25 min</span>
+        <span>💰 Wheat ₹2,450/Qtl (↑30) • Paddy ₹2,180/Qtl • Mustard ₹5,620/Qtl</span>
+        <span>🌤️ Today 32°C Clear • Tuesday light rain expected — avoid spraying</span>
+        <span>🪪 KYC Slot booking open at Kisan Seva Kendra, Noida Sec-62</span>
+        <span>🚜 Token A-113 currently being served • 14 farmers ahead</span>
+        <span>📡 LIVE: Procurement vehicle UP-16-AB-4521 is 4.8 km away • ETA 25 min</span>
+        <span>💰 Wheat ₹2,450/Qtl (↑30) • Paddy ₹2,180/Qtl • Mustard ₹5,620/Qtl</span>
+        <span>🌤️ Today 32°C Clear • Tuesday light rain expected — avoid spraying</span>
+        <span>🪪 KYC Slot booking open at Kisan Seva Kendra, Noida Sec-62</span>
+        <span>🚜 Token A-113 currently being served • 14 farmers ahead</span>
+      </div>
+    </div>
+
+    
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow" data-i18n="goodMorning">GOOD MORNING!</p>
+          <h2><span id="userGreeting" data-i18n="namaste">Namaste, Farmer</span></h2>
+          <p class="hero-copy" data-i18n="heroCopy">Digital platform for farmers to book procurement slots, complete KYC, track live queue status and get agricultural advisory. Simple, secure and available in multiple Indian languages.</p>
+          <div class="hero-buttons">
+            <button class="primary" onclick="scrollToSection('services')" data-i18n="exploreServices">Explore Services</button>
+            <button class="secondary" onclick="openPanel()" data-i18n="askAdvisory">Ask Advisory</button>
+          </div>
+          <div class="hero-trust">
+            <span>✓ Free for farmers</span>
+            <span>✓ Secure login</span>
+            <span>✓ Live tracking</span>
+          </div>
+        </div>
+        <div class="hero-side">
+          <div class="hero-stat-card">
+            <div class="stat-num">24×7</div>
+            <div class="stat-label">Service Access</div>
+          </div>
+          <div class="hero-stat-card">
+            <div class="stat-num">Live</div>
+            <div class="stat-label">Queue & Vehicle Track</div>
+          </div>
+          <div class="hero-stat-card">
+            <div class="stat-num">Multi</div>
+            <div class="stat-label">Language Support</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="services">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow" data-i18n="quickAccess">QUICK ACCESS</p>
+            <h3 data-i18n="farmerServices">Farmer Services</h3>
+          </div>
+          <button class="text-btn" data-i18n="viewAll" onclick="toggleAllServices()">View All →</button>
+        </div>
+        <div class="service-grid" id="serviceGrid">
+          <button class="service-card green" onclick="openProcurement()"><span>🚜</span><b data-i18n="procurement">Procurement</b><small data-i18n="bookTrack">Book & track</small></button>
+          <button class="service-card purple" onclick="openPanel()"><span>🌿</span><b data-i18n="advisory">Advisory</b><small data-i18n="expertGuidance">Expert guidance</small></button>
+          <button class="service-card orange" onclick="scrollToSection('horticulture')"><span>🍊</span><b data-i18n="horticulture">Horticulture</b><small data-i18n="learnFarming">Learn farming</small></button>
+          <button class="service-card blue" onclick="openPanel()"><span>💧</span><b data-i18n="irrigation">Irrigation</b><small data-i18n="waterPlanning">Water planning</small></button>
+          <button class="service-card yellow" onclick="openPanel()"><span>🌾</span><b data-i18n="seeds">Seeds</b><small data-i18n="chooseWisely">Choose wisely</small></button>
+          <button class="service-card brown" onclick="openPanel()"><span>🧺</span><b data-i18n="fertilizers">Fertilizers</b><small data-i18n="soilTips">Soil-based tips</small></button>
+          <button class="service-card pink" onclick="scrollToSection('schemes')"><span>🏛️</span><b data-i18n="schemes">Schemes</b><small data-i18n="checkBenefits">Check benefits</small></button>
+          <button class="service-card gray" onclick="window.location.href='slot-booking.html'"><span>🪪</span><b>KYC</b><small>Branch Visit</small></button>
+          <button class="service-card blue" onclick="scrollToSection('liveTracking')"><span>📡</span><b>Live Track</b><small>Vehicle status</small></button>
+          <button class="service-card yellow" onclick="scrollToSection('marketPrices')"><span>💰</span><b>Mandi Rate</b><small>Today prices</small></button>
+          <button class="service-card green" onclick="scrollToSection('weather')"><span>🌤️</span><b>Weather</b><small>Live forecast</small></button>
+          <button class="service-card purple" onclick="openTutorialVideo()"><span>▶️</span><b>Tutorial</b><small>App guide video</small></button>
+          <button class="service-card purple" onclick="openLinksSection()"><span>🔗</span><b>Links</b><small>Useful links</small></button>
+          <button class="service-card orange" onclick="scrollToSection('newsNotice')"><span>📰</span><b>News</b><small>Notices</small></button>
+        </div>
+        <div id="linksSection" class="links-panel" style="display:none;">
+          <div class="card-title">
+            <h3 style="margin:0;font-size:17px;">🔗 Useful Links</h3>
+            <button class="text-btn" onclick="document.getElementById('linksSection').style.display='none'">Close</button>
+          </div>
+          <div id="linksList" class="links-list">
+            <a href="#" target="_blank">Link 1 — https://mkisan.gov.in/ </a>
+            <a href="#" target="_blank">Link 2 — https://agmarknet.gov.in/ </a>
+            <a href="#" target="_blank">Link 3 — https://farmer.gov.in/ </a>
+          </div>
+        </div>
+</section>
+
+    <section class="section" id="govSchemes">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">GOVERNMENT SCHEMES</p>
+          <h3>Current Government Schemes For You</h3>
+        </div>
+      </div>
+
+      <div class="live-marquee live-marquee-2">
+        <div class="marquee-track">
+          <span>🌾 PM-KISAN</span>
+          <span>💰 PM Fasal Bima Yojana (PMFBY)</span>
+          <span>💧 Pradhan Mantri Krishi Sinchayee Yojana (PMKSY)</span>
+          <span>🌱 Soil Health Card Scheme</span>
+          <span>🏦 Kisan Credit Card (KCC)</span>
+          <span>🚜 Sub-Mission on Agricultural Mechanization (SMAM)</span>
+          <span>🧑‍🌾 National Agriculture Market (e-NAM)</span>
+          <span>🌿 Paramparagat Krishi Vikas Yojana (PKVY)</span>
+          <span>🌾 National Food Security Mission (NFSM)</span>
+          <span>🐄 Rashtriya Gokul Mission</span>
+          <span>🐟 Pradhan Mantri Matsya Sampada Yojana (PMMSY)</span>
+          <span>🌳 Mission for Integrated Development of Horticulture (MIDH)</span>
+          <span>🌾 PM-KISAN</span>
+          <span>💰 PM Fasal Bima Yojana (PMFBY)</span>
+          <span>💧 Pradhan Mantri Krishi Sinchayee Yojana (PMKSY)</span>
+          <span>🌱 Soil Health Card Scheme</span>
+          <span>🏦 Kisan Credit Card (KCC)</span>
+          <span>🚜 Sub-Mission on Agricultural Mechanization (SMAM)</span>
+          <span>🧑‍🌾 National Agriculture Market (e-NAM)</span>
+          <span>🌿 Paramparagat Krishi Vikas Yojana (PKVY)</span>
+          <span>🌾 National Food Security Mission (NFSM)</span>
+          <span>🐄 Rashtriya Gokul Mission</span>
+          <span>🐟 Pradhan Mantri Matsya Sampada Yojana (PMMSY)</span>
+          <span>🌳 Mission for Integrated Development of Horticulture (MIDH)</span>
+        </div>
+      </div>
+
+      <div class="schemes-grid">
+        <a class="scheme-tile" href="https://pmkisan.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🌾</div>
+          <b>PM-KISAN</b>
+          <small>₹6,000/year direct benefit</small>
+        </a>
+        <a class="scheme-tile" href="https://pmfby.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">💰</div>
+          <b>PMFBY</b>
+          <small>Crop insurance with subsidy</small>
+        </a>
+        <a class="scheme-tile" href="https://pmksy.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">💧</div>
+          <b>PMKSY</b>
+          <small>Up to 55% drip subsidy</small>
+        </a>
+        <a class="scheme-tile" href="https://www.soilhealth.dac.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🌱</div>
+          <b>Soil Health Card</b>
+          <small>Free soil testing</small>
+        </a>
+        <a class="scheme-tile" href="https://www.nabard.org/content.aspx?id=594" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🏦</div>
+          <b>Kisan Credit Card</b>
+          <small>Low-interest crop loans</small>
+        </a>
+        <a class="scheme-tile" href="https://agrimachinery.nic.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🚜</div>
+          <b>SMAM</b>
+          <small>Farm mechanization subsidy</small>
+        </a>
+        <a class="scheme-tile" href="https://www.enam.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🧑‍🌾</div>
+          <b>e-NAM</b>
+          <small>Online mandi market</small>
+        </a>
+        <a class="scheme-tile" href="https://pgsindia-ncof.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🌿</div>
+          <b>PKVY</b>
+          <small>Organic farming support</small>
+        </a>
+        <a class="scheme-tile" href="https://www.nfsm.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🌾</div>
+          <b>NFSM</b>
+          <small>Food security mission</small>
+        </a>
+        <a class="scheme-tile" href="https://dahd.gov.in/schemes/programmes/rashtriya-gokul-mission" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🐄</div>
+          <b>Gokul Mission</b>
+          <small>Cattle breed improvement</small>
+        </a>
+        <a class="scheme-tile" href="https://pmmsy.dof.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🐟</div>
+          <b>PMMSY</b>
+          <small>Fisheries development</small>
+        </a>
+        <a class="scheme-tile" href="https://midh.gov.in/" target="_blank" rel="noopener noreferrer">
+          <div class="scheme-icon">🌳</div>
+          <b>MIDH</b>
+          <small>Horticulture mission</small>
+        </a>
+      </div>
+    </section>
+
+
+      
+      <section class="live-zone">
+        <div class="live-zone-head">
+          <h3>📡 Live Centre</h3>
+          <span class="live">● LIVE</span>
+        </div>
+        <div class="live-zone-grid">
+          <div class="live-zone-col">
+            <section class="card live-card" id="queue" style="display:none;">
+            <div class="card-title">
+              <h3 data-i18n="liveQueue">Live Queue Status</h3>
+              <span class="live" data-i18n="live">● LIVE</span>
+            </div>
+            <div class="queue-row">
+              <div class="metric"><span data-i18n="yourToken">Your Token</span><strong id="queueYourToken">—</strong></div>
+              <div class="metric"><span data-i18n="currentToken">Current Token</span><strong class="purple-text" id="queueCurrentToken">A-113</strong></div>
+            </div>
+            <div class="progress-label">
+              <span id="queueAheadText">— farmers ahead of you</span>
+              <b id="queueEta">— min</b>
+            </div>
+            <div class="progress"><i id="queueProgressBar" style="width:20%"></i></div>
+            <div class="queue-board">
+              <b>📋 Real-time Queue Board</b>
+              <div id="queueTokenList" class="token-list"></div>
+            </div>
+            <div class="qr-sms-row">
+              <div class="qr-box">
+                <div id="qrcode"></div>
+                <small>Show QR at counter</small>
+              </div>
+              <div class="sms-box">
+                <b>📱 SMS Alerts</b>
+                <div id="smsLog" class="sms-log"></div>
+              </div>
+            </div>
+            <p class="muted" data-i18n="turnNotification">You will receive an SMS/app notification when your turn is near.</p>
+            <button class="primary small full-btn" onclick="sendTestSms()">📲 Send Test SMS</button>
+          </section>
+            <section class="card" id="queueEmpty">
+            <div class="card-title">
+              <h3 data-i18n="liveQueue">Live Queue Status</h3>
+            </div>
+            <p style="font-size:14px;color:#68736b;margin:0 0 14px;">No active procurement token. Book a procurement slot to get live queue position, ETA, and SMS when your turn is near.</p>
+            <button class="primary" style="width:100%;" onclick="requireKycThen('procurement-booking.html')">Book Procurement Slot →</button>
+          </section>
+          </div>
+          <div class="live-zone-col">
+            <section class="card" id="liveTracking">
+            <div class="card-title">
+              <h3>📡 Live Tracking</h3>
+              <span class="live">● LIVE</span>
+            </div>
+<div style="background:#f0faef;border:1px solid #cce1ce;border-radius:14px;padding:14px;margin-bottom:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <b style="font-size:14px;">🚛 Procurement Vehicle</b>
+                <span style="font-size:11px;background:#e8f7ea;color:#0b7d2a;padding:4px 10px;border-radius:20px;font-weight:700;">On the way</span>
+              </div>
+              <div style="font-size:13px;color:#68736b;line-height:1.6;margin-bottom:8px;">
+                Truck No: <b>UP-16-AB-4521</b><br>
+                Driver: Ramesh • 📞 98XXXXXX21<br>
+                Route: Mandi Yard → Kisan Seva Kendra
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:10px 0 6px;">
+                <span style="background:#0b7d2a;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;">A</span>
+                <span>Mandi</span>
+                <span style="flex:1;height:3px;background:linear-gradient(90deg,#0b7d2a,#6c3fc4);border-radius:4px;"></span>
+                <span style="background:#6c3fc4;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;">B</span>
+                <span>Centre</span>
+              </div>
+              <div class="progress" style="margin:8px 0;"><i id="vehicleTrackBar" style="width:68%"></i></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:#68736b;">
+                <span>Started 08:40 AM</span>
+                <b style="color:#0b7d2a;" id="vehicleEta">ETA 25 min</b>
+              </div>
+            </div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+              <div class="metric">
+                <span>Last Update</span>
+                <strong id="liveClock" style="font-size:13px;">--:--</strong>
+              </div>
+              <div class="metric">
+                <span>Distance</span>
+                <strong style="font-size:13px;" id="vehicleDist">4.8 km</strong>
+              </div>
+              <div class="metric">
+                <span>Speed</span>
+                <strong style="font-size:13px;">32 km/h</strong>
+              </div>
+            </div>
+<div style="background:#fffaf0;border:1px solid #f5e6c8;border-radius:12px;padding:12px;margin-bottom:10px;">
+              <b style="font-size:13px;">💸 Payment Tracking</b>
+              <div style="font-size:12px;color:#68736b;margin-top:6px;line-height:1.5;">
+                Procurement: PROC-2026-00891<br>
+                Amount: <b style="color:#0b7d2a;">₹36,450</b> • Status: <b style="color:#d66b00;">Initiated</b><br>
+                Expected credit: 1–2 working days
+              </div>
+            </div>
+
+            <p class="muted">Live location refreshes every 30 sec. You will get SMS/app alert when the vehicle is near your centre and when your token is about to be called.</p>
+          </section>
+          </div>
+          <div class="live-zone-col">
+            <section class="card" id="marketPrices">
+            <div class="card-title">
+              <h3>💰 Today’s Mandi Prices</h3>
+              <span class="live blink-live">● LIVE</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="price-live">
+                <div><b style="font-size:14px;">Wheat</b><br><small style="color:#5a685c;">Noida Mandi</small></div>
+                <div style="text-align:right;"><div class="rate" id="priceWheat">₹2,450</div><span class="chg-up">↑ +30</span></div>
+              </div>
+              <div class="price-live">
+                <div><b style="font-size:14px;">Paddy</b><br><small style="color:#5a685c;">Noida Mandi</small></div>
+                <div style="text-align:right;"><div class="rate" id="pricePaddy">₹2,180</div><span class="chg-up">↑ +15</span></div>
+              </div>
+              <div class="price-live">
+                <div><b style="font-size:14px;">Mustard</b><br><small style="color:#5a685c;">Noida Mandi</small></div>
+                <div style="text-align:right;"><div class="rate" id="priceMustard">₹5,620</div><span class="chg-down">↓ -40</span></div>
+              </div>
+              <div class="price-live">
+                <div><b style="font-size:14px;">Potato</b><br><small style="color:#5a685c;">Noida Mandi</small></div>
+                <div style="text-align:right;"><div class="rate" id="pricePotato">₹1,150</div><span class="chg-up">↑ +20</span></div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:10px;">Rates refresh live • Source: Local mandi / e-NAM</p>
+          </section>
+            <section class="card" id="impactMetrics">
+            <div class="card-title">
+              <h3>📉 Waiting Time Impact</h3>
+              <span class="status-pill">LIVE</span>
+            </div>
+            <div class="impact-grid">
+              <div class="impact-item"><div class="num" id="avgWait">42 min</div><div class="lbl">Avg wait (before)</div></div>
+              <div class="impact-item"><div class="num" id="newWait">12 min</div><div class="lbl">Avg wait (now)</div></div>
+              <div class="impact-item"><div class="num">71%</div><div class="lbl">Congestion ↓</div></div>
+            </div>
+            <p class="muted">Slot booking + live queue + SMS reduce centre congestion.</p>
+          </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="left-column">
+          <section class="card next-slot" id="nextSlotCard">
+            <div class="card-title">
+              <h3 data-i18n="myNextSlot">My Next Slot</h3>
+              <span class="status-pill" id="nextSlotPill" data-i18n="confirmed">CONFIRMED</span>
+            </div>
+            <div class="slot-content">
+              <div class="date-box">
+                <strong id="currentDay">--</strong>
+                <span id="currentDate" data-i18n="loading">Loading...</span>
+              </div>
+              <div>
+                <strong class="time" id="currentTime">Loading...</strong>
+                <p id="nextSlotCentre" data-i18n="kisanCentre">Kisan Seva Kendra, Noida</p>
+                <b class="token"><span data-i18n="token">Token</span>: <span id="nextSlotToken">—</span></b>
+              </div>
+              <button class="primary small" onclick="scrollToSection('queue')" data-i18n="viewQueue">View Queue Status →</button>
+            </div>
+          </section>
+          <section class="card" id="slotHistoryCard">
+            <div class="card-title">
+              <h3>📜 Slot History</h3>
+              <span class="status-pill">DONE</span>
+            </div>
+            <div id="slotHistoryList">
+              <p style="font-size:13px;color:#68736b;margin:0;">No completed slots yet.</p>
+            </div>
+          </section>
+          <section class="card" id="procurementStatusCard">
+            <div class="card-title">
+              <h3 data-i18n="procurementPayment">Procurement & Payment Status</h3>
+              <span class="status-pill live-pill" id="procLivePill" style="display:none;">● LIVE</span>
+              <button class="text-btn" data-i18n="viewAll" onclick="showToastKey('moreComing')">View All</button>
+            </div>
+            <div class="timeline" id="procTimeline">
+              <div class="pending" data-stage="weighed">1<span data-i18n="weighed">Weighed</span></div>
+              <div class="pending" data-stage="quality">2<span data-i18n="qualityCheck">Quality Check</span></div>
+              <div class="pending" data-stage="accepted">3<span data-i18n="accepted">Accepted</span></div>
+              <div class="pending" data-stage="payment_initiated">4<span data-i18n="paymentInitiated">Payment Initiated</span></div>
+              <div class="pending" data-stage="payment_done">5<span data-i18n="paymentDone">Payment Done</span></div>
+            </div>
+            <div id="procDetails" style="margin-top:14px;font-size:12px;color:#68736b;line-height:1.7;">
+              <div style="color:#94a3b8;">○ Waiting for operator to start processing at the centre…</div>
+            </div>
+          </section>
+          <section class="card update-card">
+            <span class="megaphone">📣</span>
+            <div>
+              <b data-i18n="importantUpdate">Important Update</b>
+              <p data-i18n="wheatUpdate">Wheat procurement has started in your centre.</p>
+              <small>27 Aug 2026</small>
+            </div>
+            <span>🌾</span>
+          </section>
+          <section class="card" id="kyc">
+            <div class="card-title">
+              <h3>🪪 Centre Visit / Token</h3>
+              <span class="status-orange" id="kycStatusPill">Pending Visit</span>
+            </div>
+<div id="kycDefault">
+              <p style="font-size:13px;color:#68736b;margin:0 0 12px;">Book a procurement token and sell crop at the centre. Operator can also confirm KYC here.</p>
+              <div class="queue-row" style="margin-bottom:12px;">
+                <div class="metric"><span>Nearest Branch</span><strong style="font-size:14px;">Kisan Seva Kendra, Noida Sec-62</strong></div>
+                <div class="metric"><span>Distance</span><strong style="font-size:14px;">3.2 km</strong></div>
+              </div>
+              <div class="progress-label"><span>KYC Status</span><b>Branch Visit Required</b></div>
+              <div class="progress"><i style="width:40%"></i></div>
+              <p class="muted" style="margin-top:12px;">Steps: 1. Book slot → 2. Visit branch → 3. Biometric + Document → 4. KYC Approved</p>
+              <button class="primary" style="margin-top:14px;width:100%;" onclick="requireKycThen('procurement-booking.html')">Book Procurement Slot</button>
+            </div>
+<div id="kycBooked" style="display:none;">
+              <p id="kycBookedIntro" style="font-size:13px;color:#68736b;margin:0 0 12px;">Procurement token confirmed. Live queue is active on home.</p>
+              <div class="queue-row" style="margin-bottom:12px;">
+                <div class="metric"><span>Your Token</span><strong id="kycTokenDisplay" style="font-size:18px;color:#0b7d2a;">—</strong></div>
+                <div class="metric"><span>Status</span><strong id="kycInnerStatus" style="font-size:14px;color:#0b7d2a;">Slot Booked</strong></div>
+              </div>
+              <div style="background:#f0faef;border:1px solid #cce1ce;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+                <div style="font-size:13px;"><b>📍 Centre:</b> Kisan Seva Kendra, Noida Sec-62</div>
+                <div style="font-size:13px;margin-top:6px;"><b>📅 Date & Time:</b> <span id="kycDateDisplay">—</span></div>
+              </div>
+
+              <div id="kycLiveTrackBox" style="background:#fff;border:1px solid #e4ebe4;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                  <b style="font-size:13px;">🗺️ Live Track — Path to Centre</b>
+                  <span class="live" style="font-size:10px;">● LIVE</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:8px;">
+                  <span style="background:#0b7d2a;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;">1</span>
+                  <span>Your Location</span>
+                  <span style="flex:1;height:3px;background:linear-gradient(90deg,#0b7d2a,#6c3fc4);border-radius:4px;"></span>
+                  <span style="background:#6c3fc4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;">2</span>
+                  <span>Kisan Seva Kendra</span>
+                </div>
+                <div class="progress" style="margin:8px 0;"><i id="kycTrackBar" style="width:35%"></i></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#68736b;">
+                  <span>Distance left: <b id="kycDist">3.2 km</b></span>
+                  <b style="color:#0b7d2a;">ETA ~12 min</b>
+                </div>
+                <p style="font-size:11px;color:#68736b;margin-top:8px;">Arrive at the centre only when your token is near — do not stand in line early.</p>
+              </div>
+
+              <div id="kycDoneBox" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <b style="color:#166534;">✅ Centre visit complete</b>
+                <p style="font-size:13px;color:#166534;margin:6px 0 0;">Token received / KYC verified. Book a new slot for the next procurement.</p>
+              </div>
+
+              <div class="progress-label"><span id="kycProgressTitle">Visit Progress</span><b id="kycProgressLabel">Slot Booked – Go when called</b></div>
+              <div class="progress"><i id="kycProgressBarMain" style="width:55%"></i></div>
+              <p class="muted" id="kycWarnText" style="margin-top:12px;">📡 See Live Queue Status above — go to the counter when your turn arrives.</p>
+              <div style="display:flex;gap:10px;margin-top:14px;" id="kycActionBtns">
+                <button class="primary" style="flex:1;background:#fff;color:#0b7d2a;border:2px solid #0b7d2a;box-shadow:none;" onclick="requireKycThen('procurement-booking.html')">Book New Procurement Slot</button>
+                <button class="primary" style="flex:1;background:#fff;color:#ef4444;border:2px solid #ef4444;box-shadow:none;" onclick="cancelKycSlot()">Cancel Slot</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="notifications">
+            <div class="card-title">
+              <h3>🔔 Notifications & SMS</h3>
+              <span class="status-pill" id="notifCount">3 New</span>
+            </div>
+            <div id="notifList" style="display:flex;flex-direction:column;gap:8px;">
+              <div class="notif-item">
+                <b>Queue Update</b> <span class="tag tag-sms">SMS Sent</span><br>
+                <span style="color:#68736b;">Your turn is in ~22 min. Token A-127</span>
+                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Just now</div>
+              </div>
+              <div class="notif-item" style="border-left-color:#6c3fc4;">
+                <b>Vehicle Nearby</b> <span class="tag tag-push">App Push</span><br>
+                <span style="color:#68736b;">Procurement truck 4.8 km away</span>
+                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">2 min ago</div>
+              </div>
+              <div class="notif-item" style="border-left-color:#d66b00;">
+                <b>Payment Initiated</b> <span class="tag tag-both">SMS + App</span><br>
+                <span style="color:#68736b;">₹36,450 will be credited in 1–2 days</span>
+                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Today 10:20 AM</div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="right-column">
+          <section class="card" id="weather">
+            <div class="card-title">
+              <h3>🌤️ Live Weather & Farm Advisory</h3>
+              <span class="status-pill live-pill" id="weatherStatusPill">● LIVE</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:18px;margin-bottom:14px;">
+              <div style="font-size:48px;" id="weatherIcon">☀️</div>
+              <div>
+                <div style="font-size:28px;font-weight:800;color:#0b7d2a;" id="weatherTemp">--°C</div>
+                <div style="font-size:13px;color:#68736b;" id="weatherLoc">Noida • Loading...</div>
+              </div>
+              <div style="margin-left:auto;text-align:right;font-size:13px;color:#68736b;">
+                <div id="weatherHumidity">Humidity --%</div>
+                <div id="weatherWind">Wind -- km/h</div>
+                <div id="weatherRain">Rain --%</div>
+              </div>
+            </div>
+            <div id="weatherForecast" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;font-size:12px;">
+              <div style="background:#f6faf5;padding:8px;border-radius:10px;"><div>--</div><div style="font-size:18px;">☁️</div><div>--°</div></div>
+              <div style="background:#f6faf5;padding:8px;border-radius:10px;"><div>--</div><div style="font-size:18px;">☁️</div><div>--°</div></div>
+              <div style="background:#f6faf5;padding:8px;border-radius:10px;"><div>--</div><div style="font-size:18px;">☁️</div><div>--°</div></div>
+              <div style="background:#f6faf5;padding:8px;border-radius:10px;"><div>--</div><div style="font-size:18px;">☁️</div><div>--°</div></div>
+            </div>
+            <p class="muted" style="margin-top:12px;" id="weatherTip">💡 Loading live weather advisory...</p>
+            <p style="margin-top:6px;font-size:11px;color:#8a9588;" id="weatherUpdated">Source: Open-Meteo • Auto-refresh every 30 min</p>
+          </section>
+          <section class="card" id="procurementSchedule">
+            <div class="card-title">
+              <h3>📅 Procurement Schedule</h3>
+              <span class="status-pill">This Week</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#e5f6e8;border-radius:10px;border:1px solid #cce1ce;">
+                <div><b>Wheat</b><br><small style="color:#5a685c;">Noida Sec-62</small></div>
+                <div style="text-align:right;"><b style="color:#0a6b24;">Mon–Wed</b><br><small>9 AM – 5 PM</small></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#f7fcf8;border-radius:10px;border:1px solid #d4e8d7;">
+                <div><b>Paddy</b><br><small style="color:#5a685c;">Noida Sec-62</small></div>
+                <div style="text-align:right;"><b style="color:#0a6b24;">Thu–Sat</b><br><small>9 AM – 4 PM</small></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#f7fcf8;border-radius:10px;border:1px solid #d4e8d7;">
+                <div><b>Mustard</b><br><small style="color:#5a685c;">Ghaziabad Centre</small></div>
+                <div style="text-align:right;"><b style="color:#0a6b24;">Tue–Fri</b><br><small>10 AM – 3 PM</small></div>
+              </div>
+            </div>
+            <p class="muted">Book slot before visiting. Schedule updates daily via SMS.</p>
+          </section>
+          <section class="card" id="schemes">
+            <div class="card-title">
+              <h3>🏛️ Government Schemes</h3>
+              <span class="status-pill">Active</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="scheme-card">
+                <b>PM-KISAN</b>
+                <p>₹6,000/year direct benefit to eligible farmers.</p>
+                <a href="https://pmkisan.gov.in/" target="_blank" rel="noopener">pmkisan.gov.in →</a>
+              </div>
+              <div class="scheme-card">
+                <b>PMFBY — Crop Insurance</b>
+                <p>Crop loss protection. Low premium for farmers.</p>
+                <a href="https://pmfby.gov.in/" target="_blank" rel="noopener">pmfby.gov.in →</a>
+              </div>
+              <div class="scheme-card">
+                <b>PMKSY — Irrigation</b>
+                <p>Up to 55% subsidy on drip / sprinkler.</p>
+                <a href="https://pmksy.gov.in/" target="_blank" rel="noopener">pmksy.gov.in →</a>
+              </div>
+              <div class="scheme-card">
+                <b>Kisan Credit Card (KCC)</b>
+                <p>Low-interest crop loans via banks.</p>
+                <a href="https://fasalrin.gov.in/" target="_blank" rel="noopener">fasalrin.gov.in →</a>
+              </div>
+              <div class="scheme-card">
+                <b>e-NAM / MSP Procurement</b>
+                <p>Sell produce at MSP on national mandi platform.</p>
+                <a href="https://enam.gov.in/" target="_blank" rel="noopener">enam.gov.in →</a>
+              </div>
+              <div class="scheme-card" style="border-color:#f5e6c8;background:linear-gradient(180deg,#fffaf0,#fff8e8);">
+                <b>Book Procurement Slot</b>
+                <p>Wheat & Paddy at MSP via Smart Kisan.</p>
+                <a href="#" onclick="requireKycThen('procurement-booking.html');return false;">Book Slot →</a>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="newsNotice">
+            <div class="card-title">
+              <h3>📰 News & Notices</h3>
+              <span class="live">● LIVE</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="news-item">
+                <b>Wheat procurement started — Noida centre</b>
+                <p>Book slots from 5 Sep. MSP as per latest rates. Carry Aadhaar + bank passbook.</p>
+                <div class="news-meta">Official Notice • 4 Sep 2026</div>
+                <a href="https://dfpd.gov.in/" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#0a6b24;">dfpd.gov.in →</a>
+              </div>
+              <div class="news-item" style="border-left-color:#6c3fc4;">
+                <b>SMS queue alerts now active</b>
+                <p>SMS when 5 farmers ahead and when your token is called.</p>
+                <div class="news-meta">System Update • Today</div>
+              </div>
+              <div class="news-item" style="border-left-color:#d66b00;">
+                <b>PM-KISAN instalment — check status</b>
+                <p>Verify credit status on official portal with Aadhaar.</p>
+                <div class="news-meta">Scheme Update • 2 Sep 2026</div>
+                <a href="https://pmkisan.gov.in/" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#0a6b24;">pmkisan.gov.in →</a>
+              </div>
+              <div class="news-item">
+                <b>KYC camp — Kisan Seva Kendra Sec-62</b>
+                <p>Saturday 9 AM–1 PM. Book slot to avoid rush.</p>
+                <div class="news-meta">Centre Notice • 3 Sep 2026</div>
+                <a href="slot-booking.html" style="font-size:12px;font-weight:700;color:#0a6b24;">Book KYC Slot →</a>
+              </div>
+              <div class="news-item">
+                <b>Crop insurance (PMFBY) enrolment open</b>
+                <p>Enroll before cut-off. Helpline 14447.</p>
+                <div class="news-meta">Ministry Notice</div>
+                <a href="https://pmfby.gov.in/" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#0a6b24;">pmfby.gov.in →</a>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="learn-zone">
+        <div class="learn-zone-grid">
+          <section class="card" id="advisory">
+            <div class="card-title">
+              <h3>🌱 <span data-i18n="advisory">Advisory</span></h3>
+              <button class="text-btn" data-i18n="viewAll" onclick="showToastKey('moreComing')">View All</button>
+            </div>
+            <div class="search">⌕ <input data-i18n-placeholder="searchPlaceholder" placeholder="Search crops, pests, diseases..." id="advisorySearch"></div>
+            <div class="advisory-grid">
+              <button onclick="showToastKey('cropOpened')">🌱<span data-i18n="cropAdvisory">Crop Advisory</span></button>
+              <button onclick="showToastKey('soilOpened')">🪴<span data-i18n="soilHealth">Soil Health</span></button>
+              <button onclick="showToastKey('fertilizerGuideOpened')">🧴<span data-i18n="fertilizerGuide">Fertilizer Guide</span></button>
+              <button onclick="showToastKey('pestOpened')">🐛<span data-i18n="pestDisease">Pest & Disease</span></button>
+              <button onclick="showToastKey('irrigationGuideOpened')">💧<span data-i18n="irrigationGuide">Irrigation Guide</span></button>
+              <button onclick="scrollToSection('horticulture')">🌿<span data-i18n="horticulture">Horticulture</span></button>
+            </div>
+<div style="margin-top:18px;border-top:1px solid #e4ebe4;padding-top:14px;">
+              <b style="font-size:14px;">📞 Expert Helpline Numbers</b>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f6faf5;padding:10px 12px;border-radius:10px;border:1px solid #e4ebe4;">
+                  <div><b style="font-size:13px;">Crop Expert - Ashish Singh</b><br><small style="color:#68736b;">Wheat, Rice, Pulses</small></div>
+                  <a href="tel:18001801551" style="color:#0b7d2a;font-weight:700;text-decoration:none;">8527565380</a>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f6faf5;padding:10px 12px;border-radius:10px;border:1px solid #e4ebe4;">
+                  <div><b style="font-size:13px;">Horticulture - Shivam juyal</b><br><small style="color:#68736b;">Fruits, Vegetables</small></div>
+                  <a href="tel:18001801552" style="color:#0b7d2a;font-weight:700;text-decoration:none;">87527565380</a>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f6faf5;padding:10px 12px;border-radius:10px;border:1px solid #e4ebe4;">
+                  <div><b style="font-size:13px;">Soil Health - Alok </b><br><small style="color:#68736b;">Soil Testing, Fertilizers</small></div>
+                  <a href="tel:18001801553" style="color:#0b7d2a;font-weight:700;text-decoration:none;">85267565380</a>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f6faf5;padding:10px 12px;border-radius:10px;border:1px solid #e4ebe4;">
+                  <div><b style="font-size:13px;">Pest Control - Ayushi</b><br><small style="color:#68736b;">Insects, Diseases</small></div>
+                  <a href="tel:18001801554" style="color:#0b7d2a;font-weight:700;text-decoration:none;">85275565380</a>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="horticulture">
+            <div class="card-title">
+              <h3 data-i18n="horticultureLearning">Horticulture Learning</h3>
+              <button class="text-btn" data-i18n="viewAll" onclick="showToastKey('moreComing')">View All</button>
+            </div>
+            <div class="learn-banner">
+              <b data-i18n="learnStep">Learn Horticulture<br>Step by Step</b>
+              <span>🥕🍅🥬</span>
+            </div>
+            <div class="lesson-list">
+              <button onclick="showLesson('veg')">
+                🥒 <span data-i18n="vegetableFarming">Vegetable Farming</span> →
+              </button>
+              <div id="lesson-veg" class="lesson-detail hidden">
+                <p><b>Season:</b> Year-round (Kharif + Rabi)</p>
+                <p><b>Popular crops:</b> Tomato, Brinjal, Okra, Cabbage, Cauliflower, Chilli</p>
+                <p><b>Key tips:</b> Use raised beds, drip irrigation, organic manure. Protect from frost in winter.</p>
+                <p><b>Yield:</b> 20-40 quintal/acre depending on crop</p>
+              </div>
+
+              <button onclick="showLesson('fruit')">
+                🍊 <span data-i18n="fruitFarming">Fruit Farming</span> →
+              </button>
+              <div id="lesson-fruit" class="lesson-detail hidden">
+                <p><b>Popular:</b> Mango, Guava, Banana, Papaya, Citrus, Pomegranate</p>
+                <p><b>Spacing:</b> Mango 10x10m, Guava 6x6m, Banana 2x2m</p>
+                <p><b>Irrigation:</b> Drip preferred. Critical stages: flowering & fruit set.</p>
+                <p><b>Schemes:</b> NHB subsidy available for high density planting.</p>
+              </div>
+
+              <button onclick="showLesson('nursery')">
+                🌱 <span data-i18n="nurseryManagement">Nursery Management</span> →
+              </button>
+              <div id="lesson-nursery" class="lesson-detail hidden">
+                <p><b>Setup:</b> Polyhouse / Net house recommended</p>
+                <p><b>Media:</b> Cocopeat + Vermicompost + Soil (1:1:1)</p>
+                <p><b>Care:</b> Maintain 25-30°C, 60-70% humidity. Harden seedlings 7 days before transplant.</p>
+              </div>
+
+              <button onclick="showLesson('drip')">
+                💧 <span data-i18n="dripIrrigation">Drip Irrigation</span> →
+              </button>
+              <div id="lesson-drip" class="lesson-detail hidden">
+                <p><b>Benefits:</b> 40-60% water saving, higher yield, less weed</p>
+                <p><b>Subsidy:</b> Up to 55% under PMKSY for small/marginal farmers</p>
+                <p><b>Layout:</b> Lateral spacing based on crop (0.6-1.2m for vegetables)</p>
+              </div>
+
+              <button onclick="showLesson('pest')">
+                🌵 <span data-i18n="pestManagement">Pest Management</span> →
+              </button>
+              <div id="lesson-pest" class="lesson-detail hidden">
+                <p><b>IPM approach:</b> Prefer bio-pesticides (Neem, Trichoderma)</p>
+                <p><b>Common pests:</b> Aphids, Whitefly, Fruit borer, Leaf miner</p>
+                <p><b>Yellow sticky traps + pheromone traps</b> recommended for monitoring.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    
+    <footer class="gov-footer">
+      <div class="gov-footer-inner">
+        <div class="gov-footer-links">
+          <a href="#" onclick="showFooterPage('disclaimer');return false;">Disclaimer</a>
+          <span>|</span>
+          <a href="#" onclick="showFooterPage('terms');return false;">Terms and Conditions</a>
+          <span>|</span>
+          <a href="#" onclick="showFooterPage('privacy');return false;">Privacy Policy</a>
+          <span>|</span>
+          <a href="#" onclick="showFooterPage('copyright');return false;">Copyright Policy</a>
+          <span>|</span>
+          <a href="#" onclick="showFooterPage('hyperlink');return false;">Hyperlinking Policy</a>
+          <span>|</span>
+          <a href="#" onclick="showFooterPage('accessibility');return false;">Accessibility</a>
+        </div>
+        <p class="gov-footer-text">
+          Smart Kisan is an independent platform for farmer services (procurement, KYC, tracking &amp; advisory).
+          It is <strong>not</strong> an official website of the Government of India or any State Government.
+          For official information visit
+          <a href="https://www.india.gov.in/" target="_blank" rel="noopener">india.gov.in</a> ·
+          <a href="https://pmkisan.gov.in/" target="_blank" rel="noopener">pmkisan.gov.in</a> ·
+          <a href="https://www.agriwelfare.gov.in/" target="_blank" rel="noopener">agriwelfare.gov.in</a>.
+          <a href="#" onclick="showFooterPage('disclaimer');return false;">Read full disclaimer</a>
+        </p>
+        <div class="gov-footer-brands">
+          <div class="gov-brand-left">
+            <strong>SMART KISAN</strong>
+            <span>Farmer Procurement · Advisory · Live Tracking Platform</span>
+          </div>
+          <div class="gov-brand-right">
+            <span class="di-badge">Digital India</span>
+            <span class="di-sub">Empowering Farmers</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <div id="footerModal" class="footer-modal hidden">
+      <div class="footer-modal-card">
+        <div class="footer-modal-head">
+          <h3 id="footerModalTitle">Policy</h3>
+          <button type="button" onclick="closeFooterPage()">✕</button>
+        </div>
+        <div id="footerModalBody" class="footer-modal-body"></div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})">⌂<span data-i18n="home">Home</span></button>
+      <button onclick="scrollToSection('queue')">🚜<span data-i18n="procurement">Procurement</span></button>
+      <button onclick="openPanel()">🌿<span data-i18n="advisory">Advisory</span></button>
+      <button onclick="scrollToSection('horticulture')">📖<span data-i18n="learn">Learn</span></button>
+      <button onclick="window.location.href='profile.html'">◯<span data-i18n="profile">Profile</span></button>
+    </nav>
+  </div>
+
+  <!-- Tutorial Video Modal -->
+  <div id="tutorialModal" class="tutorial-modal hidden" onclick="if(event.target===this)closeTutorialVideo()">
+    <div class="tutorial-modal-card">
+      <div class="tutorial-modal-head">
+        <h3>▶️ Smart Kisan — App Tutorial</h3>
+        <button class="text-btn" onclick="closeTutorialVideo()" aria-label="Close">✕</button>
+      </div>
+      <div class="tutorial-modal-body">
+        <video id="tutorialVideo" controls playsinline poster="" style="width:100%;border-radius:12px;background:#000;max-height:60vh;">
+          <source src="tutorial.mp4" type="video/mp4">
+          <source src="videos/tutorial.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <p class="muted" style="margin-top:12px;font-size:13px;">
+          This short video shows how to book procurement slots, complete KYC, track live queue, check mandi rates and use weather advisory.
+          <br><small style="color:#8a9588;">Place your video file as <b>tutorial.mp4</b> in the same folder as index.html</small>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="script.js?v=20260904-1"></script>
+  <script>
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQ3YK7r5lSvN6NzDNMsgVJ9nMLVKCrikI",
+      authDomain: "rentkarin-ce60d.firebaseapp.com",
+      projectId: "rentkarin-ce60d",
+      storageBucket: "rentkarin-ce60d.appspot.com",
+      messagingSenderId: "586594013175",
+      appId: "1:586594013175:web:bed29302743adc8bb7e8f2"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    if (typeof SK_DB !== 'undefined') SK_DB.init();
+    const auth = firebase.auth();
+
+    function clearBookingLocalStorage() {
+      var keys = [
+        'kycToken','kycShortToken','kycDate','kycPaid','kycStatus','kycArchived',
+        'kycVerified','sk_last_booking','sk_all_bookings','sk_fresh_booking',
+        'sk_slot_history','razorpay_payment_id','sk_token_serial',
+        'sk_booking_type','sk_kyc_token','sk_kyc_short','sk_kyc_date'
+      ];
+      keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    }
+
+    function bindAuthUser(user) {
+      if (!user) {
+        // Clear local cache only on full logout. Data is restored from Firestore on next login.
+        clearBookingLocalStorage();
+        localStorage.removeItem('sk_auth_uid');
+        localStorage.removeItem('farmerName');
+        return;
+      }
+      var prev = localStorage.getItem('sk_auth_uid');
+      if (prev && prev !== user.uid) {
+        // Different account on same device — wipe previous farmer's booking/KYC state
+        clearBookingLocalStorage();
+      }
+      localStorage.setItem('sk_auth_uid', user.uid);
+      if (user.displayName) localStorage.setItem('farmerName', user.displayName);
+      // Restore this user's bookings from cloud so data survives logout → login
+      if (typeof SK_DB !== 'undefined' && SK_DB.restoreUserBookings) {
+        SK_DB.restoreUserBookings(user.uid).then(function (rec) {
+          if (rec && rec.farmerName && !localStorage.getItem('farmerName')) {
+            localStorage.setItem('farmerName', rec.farmerName);
+          }
+          // Refresh any UI that depends on booking state
+          if (typeof startKycStatusWatch === 'function') try { startKycStatusWatch(); } catch (e) {}
+          if (typeof startRealTimeQueue === 'function') try { startRealTimeQueue(); } catch (e) {}
+        }).catch(function () {});
+      }
+    }
+
+    auth.onAuthStateChanged((user) => {
+      const greeting = document.getElementById('userGreeting');
+      const loginBtn = document.getElementById('loginBtnTop');
+
+      if (!user) {
+        bindAuthUser(null);
+        if (!sessionStorage.getItem('skipLoginOnce')) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (greeting) greeting.textContent = 'Namaste, Farmer';
+        return;
+      }
+
+      bindAuthUser(user);
+      const name = user.displayName || localStorage.getItem('farmerName') || 'Farmer';
+      if (greeting) greeting.textContent = 'Namaste, ' + name;
+      if (loginBtn) {
+        loginBtn.innerHTML = '👤 ' + (name.split(' ')[0] || 'Profile');
+        loginBtn.href = 'profile.html';
+      }
+      localStorage.setItem('farmerName', name);
+      sessionStorage.removeItem('skipLoginOnce');
+    });
+
+    function showLesson(id) {
+      const el = document.getElementById('lesson-' + id);
+      if (!el) return;
+      const isHidden = el.classList.contains('hidden');
+      document.querySelectorAll('.lesson-detail').forEach(d => d.classList.add('hidden'));
+      if (isHidden) el.classList.remove('hidden');
+    }
+
+    /* ---------- Footer policy pages (official style) ---------- */
+    const FOOTER_PAGES = {
+      disclaimer: {
+        title: 'Disclaimer',
+        body: `
+          <p><strong>Important Disclaimer</strong></p>
+          <p>Smart Kisan is an independent digital platform developed to assist farmers with procurement slot booking, KYC appointment scheduling, live queue / vehicle tracking and basic agricultural advisory.</p>
+          <p><strong>This website is NOT an official website of the Government of India, any State Government, or any Ministry / Department of Agriculture.</strong></p>
+          <p>The information, rates, scheme summaries and advisory content displayed on this platform are for general guidance and awareness only. They do not constitute legal, financial or official advice.</p>
+          <p>For authentic and updated information on government schemes, benefits, eligibility and application procedures, farmers are requested to visit the official portals:</p>
+          <ul>
+            <li><a href="https://www.india.gov.in/" target="_blank" rel="noopener">india.gov.in</a> – National Portal of India</li>
+            <li><a href="https://pmkisan.gov.in/" target="_blank" rel="noopener">pmkisan.gov.in</a> – Pradhan Mantri Kisan Samman Nidhi</li>
+            <li><a href="https://www.agriwelfare.gov.in/" target="_blank" rel="noopener">agriwelfare.gov.in</a> – Ministry of Agriculture &amp; Farmers Welfare</li>
+            <li>Respective State Agriculture / Horticulture Department websites</li>
+          </ul>
+          <p>Smart Kisan shall not be held responsible for any loss, delay, or decision taken by users solely on the basis of information shown on this platform. Final authority for procurement, payments and scheme benefits rests with the concerned government departments and agencies.</p>
+          <p>By using this website, you acknowledge that you have read and understood this disclaimer.</p>
+        `
+      },
+      terms: {
+        title: 'Terms and Conditions',
+        body: `
+          <p>By accessing or using the Smart Kisan platform, you agree to the following terms:</p>
+          <ol>
+            <li>The platform is provided on an “as is” and “as available” basis for the benefit of farmers.</li>
+            <li>Users must provide accurate information while creating accounts, booking slots or submitting KYC-related details.</li>
+            <li>Misuse of the platform, submission of false information, or any attempt to disrupt services may result in suspension of access.</li>
+            <li>Slot bookings, queue positions and payment confirmations are subject to verification at the concerned Kisan Seva Kendra / procurement centre.</li>
+            <li>Smart Kisan reserves the right to modify features, content or these terms at any time without prior notice.</li>
+            <li>These terms shall be governed by the laws of India. Any dispute shall be subject to the jurisdiction of the competent courts.</li>
+          </ol>
+        `
+      },
+      privacy: {
+        title: 'Privacy Policy',
+        body: `
+          <p>Smart Kisan respects the privacy of its users.</p>
+          <ul>
+            <li>We collect only such information as is necessary for account creation, slot booking, KYC tracking and service improvement (e.g. name, mobile number, email, booking details).</li>
+            <li>Personal data is stored securely using industry-standard practices and is not sold to third parties.</li>
+            <li>Information may be shared with the concerned procurement centre / operator only to the extent required for fulfilling the booked service.</li>
+            <li>Users may request correction or deletion of their account-related data by contacting the platform support.</li>
+            <li>By using the platform, you consent to the collection and use of information as described in this policy.</li>
+          </ul>
+        `
+      },
+      copyright: {
+        title: 'Copyright Policy',
+        body: `
+          <p>All content, design, logos, text and software on the Smart Kisan platform (unless otherwise stated) are the intellectual property of the platform owners.</p>
+          <p>Material may be viewed and used for personal, non-commercial purposes related to farming and agricultural services. Any reproduction, distribution or commercial use without prior written permission is prohibited.</p>
+          <p>External links and government scheme names / logos are acknowledged as belonging to their respective owners.</p>
+        `
+      },
+      hyperlink: {
+        title: 'Hyperlinking Policy',
+        body: `
+          <p>Links to official government websites (india.gov.in, pmkisan.gov.in, agriwelfare.gov.in and State portals) are provided for the convenience of users.</p>
+          <p>Smart Kisan is not responsible for the content, accuracy or availability of external websites. Linking does not imply endorsement.</p>
+          <p>Permission is not required to link to the public pages of this website, provided the link is not used in a misleading manner and does not create the impression of an official government association.</p>
+        `
+      },
+      accessibility: {
+        title: 'Accessibility',
+        body: `
+          <p>Smart Kisan aims to make its services usable by as many farmers as possible.</p>
+          <ul>
+            <li>The platform supports multiple Indian languages.</li>
+            <li>Pages are designed to work on mobile phones and low-bandwidth connections.</li>
+            <li>We continuously work to improve readability, contrast and navigation.</li>
+            <li>If you face any difficulty in accessing any section, please inform us so that we can improve the experience.</li>
+          </ul>
+        `
+      }
+    };
+
+    function showFooterPage(key) {
+      const page = FOOTER_PAGES[key];
+      if (!page) return;
+      const modal = document.getElementById('footerModal');
+      const title = document.getElementById('footerModalTitle');
+      const body = document.getElementById('footerModalBody');
+      if (!modal || !title || !body) return;
+      title.textContent = page.title;
+      body.innerHTML = page.body;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeFooterPage() {
+      const modal = document.getElementById('footerModal');
+      if (modal) modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Close modal on backdrop click
+    document.addEventListener('click', function (e) {
+      const modal = document.getElementById('footerModal');
+      if (modal && e.target === modal) closeFooterPage();
+    });
+  </script>
+
+  <script>
+
+    
+    function isKycComplete() {
+      if (localStorage.getItem('kycVerified') === '1') return true;
+      var st = (localStorage.getItem('kycStatus') || '').toLowerCase();
+      if (st === 'verified' || st === 'kyc_complete' || st === 'complete') return true;
+      return false;
+    }
+
+    function requireKycThen(goUrl) {
+      if (isKycComplete()) {
+        window.location.href = goUrl;
+        return;
+      }
+      alert('Complete KYC first.\n\nGo to KYC (Branch Visit), book a slot, and get it confirmed at the centre. After KYC is verified you can book a procurement slot.');
+      window.location.href = 'slot-booking.html';
+    }
+
+    function openProcurement() {
+      // If already has active procurement token → show live queue
+      const token = localStorage.getItem('kycToken');
+      const archived = localStorage.getItem('kycArchived') === '1';
+      if (token && !archived && localStorage.getItem('kycStatus') === 'booked') {
+        scrollToSection('queue');
+        return;
+      }
+      // Otherwise require KYC before booking procurement
+      if (!isKycComplete()) {
+        alert('Complete KYC first before booking a procurement slot.\n\nBook a KYC branch visit and get it confirmed at the centre.');
+        window.location.href = 'slot-booking.html';
+        return;
+      }
+      window.location.href = 'procurement-booking.html';
+    }
+
+    function loadKycBooking() {
+      const defaultBox = document.getElementById('kycDefault');
+      const bookedBox = document.getElementById('kycBooked');
+      const pill = document.getElementById('kycStatusPill');
+      const queueSec = document.getElementById('queue');
+      const queueEmpty = document.getElementById('queueEmpty');
+      const token = localStorage.getItem('kycToken');
+      const date = localStorage.getItem('kycDate');
+      const bookingType = localStorage.getItem('sk_booking_type') || '';
+      const st = (localStorage.getItem('kycStatus') || '').toLowerCase();
+      const kycDone = localStorage.getItem('kycVerified') === '1' || st === 'verified';
+      // Active procurement queue — do NOT hide just because KYC was done earlier
+      const isProcurementActive = bookingType === 'procurement' && (st === 'booked' || st === 'waiting');
+      const alreadyReceived = st === 'received' || localStorage.getItem('kycArchived') === '1';
+      // KYC appointment only (no procurement token in queue yet)
+      const isKycOnly = !isProcurementActive && !alreadyReceived && (
+        bookingType === 'kyc' || st === 'kyc_pending' || (kycDone && bookingType !== 'procurement')
+      );
+      const isProcurement = isProcurementActive;
+
+      if (token && date) {
+        if (defaultBox) defaultBox.style.display = 'none';
+        if (bookedBox) bookedBox.style.display = 'block';
+        const tokEl = document.getElementById('kycTokenDisplay');
+        const dateEl = document.getElementById('kycDateDisplay');
+        if (tokEl) tokEl.textContent = token;
+        if (dateEl) dateEl.textContent = date;
+
+        const intro = document.getElementById('kycBookedIntro');
+        if (pill) {
+          if (kycDone) {
+            pill.textContent = 'KYC Complete';
+            pill.className = 'status-pill';
+            pill.style.background = '#dcfce7';
+            pill.style.color = '#166534';
+          } else if (isKycOnly) {
+            pill.textContent = 'KYC Pending';
+            pill.className = 'status-orange';
+          } else if (alreadyReceived) {
+            pill.textContent = 'Received at Centre';
+            pill.className = 'status-pill';
+          } else {
+            pill.textContent = 'Slot Booked';
+            pill.className = 'status-pill';
+          }
+        }
+        if (intro) {
+          if (kycDone) {
+            intro.textContent = 'KYC verified at centre. You can now book a procurement slot.';
+          } else if (isKycOnly) {
+            intro.textContent = 'KYC branch visit booked. Go to the centre for document verification. This is not a procurement queue token.';
+          } else {
+            intro.textContent = 'Procurement token confirmed. Live queue is active on home.';
+          }
+        }
+
+        const nextTok = document.getElementById('nextSlotToken');
+        if (nextTok) {
+          var shortN = localStorage.getItem('kycShortToken');
+          if (!shortN && typeof SK_DB !== 'undefined') shortN = SK_DB.displayToken(token);
+          if (!shortN) shortN = token;
+          nextTok.textContent = shortN;
+        }
+        const nextPill = document.querySelector('.next-slot .status-pill');
+        if (nextPill) {
+          if (kycDone) {
+            nextPill.textContent = 'KYC DONE';
+            nextPill.style.background = '#dcfce7';
+            nextPill.style.color = '#166534';
+          } else if (isKycOnly) {
+            nextPill.textContent = 'KYC VISIT';
+          } else if (alreadyReceived) {
+            nextPill.textContent = 'RECEIVED';
+            nextPill.style.background = '#dcfce7';
+            nextPill.style.color = '#166534';
+          } else {
+            nextPill.textContent = 'CONFIRMED';
+          }
+        }
+
+        // Priority: active procurement queue > KYC-only > received > empty
+        if (isProcurementActive) {
+          // Clear any stale received flags so live queue shows
+          localStorage.removeItem('kycArchived');
+          if (queueSec) queueSec.style.display = 'block';
+          if (queueEmpty) queueEmpty.style.display = 'none';
+          const qToken = document.getElementById('queueYourToken');
+          if (qToken) {
+            var shortT = localStorage.getItem('kycShortToken');
+            if (!shortT && typeof SK_DB !== 'undefined') shortT = SK_DB.displayToken(token);
+            if (!shortT) shortT = token;
+            qToken.textContent = shortT;
+          }
+          setTimeout(function () {
+            if (typeof startRealTimeQueue === 'function') startRealTimeQueue();
+            var tok = localStorage.getItem('kycShortToken') || localStorage.getItem('kycToken');
+            if (tok && typeof renderQr === 'function') renderQr(tok);
+          }, 300);
+        } else if (isKycOnly) {
+          if (queueSec) queueSec.style.display = 'none';
+          if (queueEmpty) {
+            queueEmpty.style.display = 'block';
+            const p = queueEmpty.querySelector('p');
+            if (p) {
+              p.textContent = kycDone
+                ? 'KYC is complete. Book a procurement slot to join the live queue.'
+                : 'KYC visit is booked. Complete centre verification first. Live procurement queue will open after you book a procurement slot.';
+            }
+          }
+          if (kycDone && typeof setKycCardCompleted === 'function') {
+            setTimeout(function () { setKycCardCompleted('kyc'); }, 50);
+          } else if (typeof startKycStatusWatch === 'function') {
+            startKycStatusWatch();
+          }
+        } else if (alreadyReceived) {
+          if (queueSec) queueSec.style.display = 'none';
+          if (queueEmpty) {
+            queueEmpty.style.display = 'block';
+            const p = queueEmpty.querySelector('p');
+            if (p) p.textContent = 'Last procurement token received at the centre. Book a new procurement slot to join the live queue again.';
+          }
+          if (typeof renderSlotHistory === 'function') renderSlotHistory();
+          if (typeof setKycCardCompleted === 'function') {
+            setTimeout(function () {
+              setKycCardCompleted(localStorage.getItem('kycVerified') === '1' ? 'kyc' : 'received');
+            }, 50);
+          }
+        } else {
+          if (queueSec) queueSec.style.display = 'none';
+          if (queueEmpty) queueEmpty.style.display = 'block';
+        }
+      } else {
+        if (defaultBox) defaultBox.style.display = 'block';
+        if (bookedBox) bookedBox.style.display = 'none';
+        if (pill) { pill.textContent = 'Pending Visit'; pill.className = 'status-orange'; }
+        if (queueSec) queueSec.style.display = 'none';
+        if (queueEmpty) queueEmpty.style.display = 'block';
+        const nextTok2 = document.getElementById('nextSlotToken');
+        if (nextTok2) nextTok2.textContent = '—';
+      }
+    }
+
+    function cancelKycSlot() {
+      if (!confirm('You want to cancel the slot')) return;
+      localStorage.removeItem('kycToken');
+      localStorage.removeItem('sk_booking_type');
+      localStorage.removeItem('sk_kyc_token');
+      localStorage.removeItem('kycDate');
+      localStorage.removeItem('kycPaid');
+      localStorage.removeItem('kycStatus');
+      localStorage.removeItem('kycServedAt');
+      localStorage.removeItem('kycArchived');
+      localStorage.removeItem('kycVerified');
+      localStorage.removeItem('kycShortToken');
+      localStorage.removeItem('razorpay_payment_id');
+
+      const name = localStorage.getItem('farmerName');
+      if (name) localStorage.removeItem('kyc_' + name);
+      loadKycBooking();
+      if (typeof showToast === 'function') showToast('Procurement slot cancelled successfully');
+      else alert('Procurement slot cancelled successfully');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // New booking just completed → force active queue
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        if (params.get('fresh') === '1' || localStorage.getItem('sk_fresh_booking') === '1') {
+          localStorage.setItem('kycStatus', 'booked');
+          localStorage.removeItem('kycArchived');
+          localStorage.removeItem('sk_fresh_booking');
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', 'index.html');
+          }
+        }
+      } catch (e) {}
+      loadKycBooking();
+      setTimeout(function () {
+        if (typeof startKycStatusWatch === 'function') startKycStatusWatch();
+        else if (typeof checkKycVerificationStatus === 'function') checkKycVerificationStatus();
+      }, 800);
+    });
+
+    setTimeout(loadKycBooking, 400);
+    setTimeout(loadKycBooking, 1200);
+  </script>
+
+  <script>
+
+    function updateLiveClock() {
+      const el = document.getElementById('liveClock');
+      if (el) {
+        const now = new Date();
+        el.textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    let trackProgress = 68;
+    setInterval(() => {
+      const bar = document.querySelector('#liveTracking .progress i');
+      if (bar && trackProgress < 95) {
+        trackProgress += 0.3;
+        bar.style.width = Math.min(trackProgress, 95) + '%';
+      }
+    }, 5000);
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const queueSec = document.getElementById('queue');
+        if (queueSec && queueSec.style.display !== 'none') {
+            simulateSmsAlert();
+        } else {
+            setTimeout(() => {
+                const queueSec2 = document.getElementById('queue');
+                if (queueSec2 && queueSec2.style.display !== 'none') {
+                    simulateSmsAlert();
+                }
+            }, 2000);
+        }
+    });
+</script>
+
+  <script>
+    function openLinksSection() {
+      const el = document.getElementById('linksSection');
+      if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        if (el.style.display === 'block') el.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }
+    function toggleAllServices() {
+      const grid = document.getElementById('serviceGrid');
+      if (!grid) return;
+      const expanded = grid.classList.toggle('expanded');
+      if (expanded) {
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(100px, 1fr))';
+        showToast('All services shown');
+      } else {
+        grid.style.gridTemplateColumns = '';
+        showToast('Services collapsed');
+      }
+    }
+  </script>
+
+<script>
+function generateQueueBoard(currentTokenNum, yourTokenNum) {
+  const list = document.getElementById('queueTokenList');
+  if (!list) return;
+  list.innerHTML = '';
+  const nums = [];
+  for (let i = currentTokenNum - 1; i <= currentTokenNum + 3; i++) {
+    if (i > 0) nums.push(i);
+  }
+  if (yourTokenNum > currentTokenNum + 3) {
+    nums.push(-1);
+    nums.push(yourTokenNum);
+  } else if (yourTokenNum > currentTokenNum && !nums.includes(yourTokenNum)) {
+    nums.push(yourTokenNum);
+  }
+  nums.forEach(function(i) {
+    if (i === -1) {
+      const dots = document.createElement('span');
+      dots.className = 'token-chip token-dots';
+      dots.textContent = '···';
+      list.appendChild(dots);
+      return;
+    }
+    const tok = 'A-' + i;
+    let cls = 'token-chip';
+    if (i === currentTokenNum) cls += ' token-now';
+    else if (i === yourTokenNum) cls += ' token-you';
+    else if (i < currentTokenNum) cls += ' token-done';
+    const span = document.createElement('span');
+    span.className = cls;
+    span.textContent = tok + (i === currentTokenNum ? ' ●' : i === yourTokenNum ? ' YOU' : '');
+    list.appendChild(span);
+  });
+}
+
+function renderQr(token) {
+  const el = document.getElementById('qrcode');
+  if (!el) return;
+  const full = localStorage.getItem('kycToken') || token || '';
+  const text = String(full || token || '');
+  el.innerHTML = '';
+  if (!text || text === '—') {
+    el.innerHTML = '<span style="font-size:11px;color:#68736b;">No token</span>';
+    return;
+  }
+  if (typeof QRCode === 'undefined') {
+    el.innerHTML = '<span style="font-size:11px;color:#68736b;">' + text + '</span>';
+    return;
+  }
+  try {
+    new QRCode(el, {
+      text: text,
+      width: 120,
+      height: 120,
+      colorDark: '#0b7d2a',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch (e) {
+    el.textContent = text;
+  }
+}
+
+function addSmsLog(msg) {
+  const log = document.getElementById('smsLog');
+  if (!log) return;
+  const time = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const div = document.createElement('div');
+  div.innerHTML = '<b style="color:#0b7d2a;">[' + time + ']</b> ' + msg;
+  log.insertBefore(div, log.firstChild);
+}
+
+function sendTestSms() {
+  const token = document.getElementById('queueYourToken') ? document.getElementById('queueYourToken').textContent : 'A-127';
+  addSmsLog('SMS sent: Token ' + token + ' — your turn is in about 5 minutes.');
+  showToast('📲 Test SMS sent successfully!');
+  const notifList = document.getElementById('notifList');
+  if (notifList) {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:10px 12px;background:#f0faef;border-radius:10px;border-left:3px solid #0b7d2a;font-size:13px;';
+    item.innerHTML = '<b>Test SMS</b> <span style="font-size:10px;background:#e8f7ea;color:#0b7d2a;padding:2px 6px;border-radius:8px;">SMS Sent</span><br><span style="color:#68736b;">Token ' + token + ' alert sent to registered mobile</span><div style="font-size:11px;color:#94a3b8;margin-top:4px;">Just now</div>';
+    notifList.insertBefore(item, notifList.firstChild);
+  }
+}
+
+// ============================================================
+// REAL LIVE QUEUE — Firestore onSnapshot (no fake setInterval)
+// ============================================================
+let _queueUnsub = null;
+let _lastNotifiedAhead = null; // avoid spamming same alert
+
+function saveSlotToHistory(token, shortToken, status) {
+  try {
+    const item = {
+      token: token || localStorage.getItem('kycToken') || '',
+      shortToken: shortToken || localStorage.getItem('kycShortToken') || '',
+      dateTime: localStorage.getItem('kycDate') || new Date().toLocaleString(),
+      centre: localStorage.getItem('sk_centre_name') || 'Kisan Seva Kendra',
+      status: status || 'received',
+      completedAt: new Date().toISOString()
+    };
+    const list = JSON.parse(localStorage.getItem('sk_slot_history') || '[]');
+    // avoid duplicate same token
+    const filtered = list.filter(function (x) { return x.token !== item.token; });
+    filtered.unshift(item);
+    localStorage.setItem('sk_slot_history', JSON.stringify(filtered.slice(0, 30)));
+  } catch (e) {}
+}
+
+function renderSlotHistory() {
+  const box = document.getElementById('slotHistoryList');
+  if (!box) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('sk_slot_history') || '[]'); } catch (e) {}
+  if (!list.length) {
+    box.innerHTML = '<p style="font-size:13px;color:#68736b;margin:0;">No completed slots yet.</p>';
+    return;
+  }
+  box.innerHTML = list.slice(0, 8).map(function (it) {
+    const st = (it.status || 'received').toUpperCase();
+    const color = st === 'RECEIVED' || st === 'SERVED' ? '#166534' : '#68736b';
+    const bg = st === 'RECEIVED' || st === 'SERVED' ? '#dcfce7' : '#f1f5f1';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eef3ee;gap:10px;">' +
+      '<div><b style="font-size:14px;">' + (it.shortToken || it.token || '—') + '</b>' +
+      '<div style="font-size:12px;color:#68736b;">' + (it.dateTime || '') + '</div></div>' +
+      '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:' + bg + ';color:' + color + ';">' + st + '</span></div>';
+  }).join('');
+}
+
+function clearActiveSlotFromUI() {
+  const queueSec = document.getElementById('queue');
+  const queueEmpty = document.getElementById('queueEmpty');
+  if (queueSec) queueSec.style.display = 'none';
+  if (queueEmpty) {
+    queueEmpty.style.display = 'block';
+    const p = queueEmpty.querySelector('p');
+    if (p) p.textContent = 'Last procurement token received at the centre. Book a new procurement slot to join the live queue again.';
+  }
+  const nextPill = document.querySelector('.next-slot .status-pill');
+  if (nextPill) {
+    nextPill.textContent = 'RECEIVED';
+    nextPill.className = 'status-pill';
+    nextPill.style.background = '#dcfce7';
+    nextPill.style.color = '#166534';
+  }
+  if (typeof setKycCardCompleted === 'function') setKycCardCompleted('received');
+  if (typeof renderSlotHistory === 'function') renderSlotHistory();
+}
+
+function markSlotReceivedUI(passed) {
+  const nextPill = document.querySelector('.next-slot .status-pill');
+  if (nextPill) {
+    nextPill.textContent = passed ? 'RECEIVED' : 'YOUR TURN';
+    nextPill.className = 'status-pill';
+    nextPill.style.background = '#dcfce7';
+    nextPill.style.color = '#166534';
+  }
+  const kycPill = document.getElementById('kycStatusPill') || document.querySelector('#kycBookedBox .status-pill, .kyc-card .status-pill');
+  if (kycPill) {
+    kycPill.textContent = passed ? 'Received' : 'At Counter Now';
+    kycPill.className = 'status-pill';
+  }
+}
+
+function completeSlotAndArchive(yourNum, currentNum) {
+  if (localStorage.getItem('kycStatus') === 'received' && localStorage.getItem('kycArchived') === '1') {
+    clearActiveSlotFromUI();
+    return;
+  }
+  const token = localStorage.getItem('kycToken') || '';
+  const shortToken = localStorage.getItem('kycShortToken') || ('A-' + yourNum);
+  localStorage.setItem('kycStatus', 'received');
+  localStorage.setItem('kycArchived', '1');
+  saveSlotToHistory(token, shortToken, 'received');
+
+  if (typeof SK_DB !== 'undefined' && SK_DB.markServed) {
+    SK_DB.markServed(token).catch(function () {});
+  }
+
+  markSlotReceivedUI(currentNum > yourNum);
+  clearActiveSlotFromUI();
+
+  // Stop listening — no longer in queue
+  if (_queueUnsub) {
+    try { _queueUnsub(); } catch (e) {}
+    _queueUnsub = null;
+  }
+}
+
+function applyQueueUI(yourNum, currentNum, avgMin) {
+  avgMin = avgMin || 3;
+  const ahead = yourNum - currentNum; // can be negative if passed
+  const curEl = document.getElementById('queueCurrentToken');
+  const aheadEl = document.getElementById('queueAheadText');
+  const etaEl = document.getElementById('queueEta');
+  const bar = document.getElementById('queueProgressBar');
+
+  if (curEl) curEl.textContent = 'A-' + currentNum;
+
+  // Operator has passed this token → archive to history, remove from live queue
+  if (currentNum > yourNum) {
+    if (_lastNotifiedAhead !== -1) {
+      _lastNotifiedAhead = -1;
+      if (typeof addSmsLog === 'function') addSmsLog('Slot completed. Token A-' + yourNum + ' RECEIVED at centre.');
+      if (typeof showToast === 'function') showToast('✅ Token A-' + yourNum + ' received — moved to Slot History');
+    }
+    completeSlotAndArchive(yourNum, currentNum);
+    return;
+  }
+
+  // Exactly your turn
+  if (currentNum === yourNum) {
+    if (aheadEl) aheadEl.textContent = 'Token received — please proceed to counter';
+    if (etaEl) etaEl.textContent = 'Now';
+    if (bar) bar.style.width = '100%';
+    if (typeof generateQueueBoard === 'function') generateQueueBoard(yourNum, yourNum);
+    markSlotReceivedUI(false);
+
+    if (_lastNotifiedAhead !== 0) {
+      _lastNotifiedAhead = 0;
+      if (typeof addSmsLog === 'function') {
+        addSmsLog('URGENT: Your token is being served. Please proceed to the counter.');
+        addSmsLog('Slot status: RECEIVED at procurement centre.');
+      }
+      if (typeof showToast === 'function') showToast('✅ Your slot is RECEIVED. Go to the counter now!');
+      localStorage.setItem('kycStatus', 'received');
+      if (typeof SK_DB !== 'undefined' && SK_DB.markServed) {
+        SK_DB.markServed(localStorage.getItem('kycToken')).catch(function () {});
+      }
+    }
+    return;
+  }
+
+  // Still waiting
+  const wait = Math.max(0, ahead);
+  const eta = wait * avgMin;
+  if (aheadEl) aheadEl.textContent = wait + ' farmers ahead of you';
+  if (etaEl) etaEl.textContent = eta + ' min';
+  const start = 100;
+  const total = Math.max(1, yourNum - start);
+  const done = Math.max(0, currentNum - start);
+  const pct = Math.min(95, Math.round((done / total) * 100));
+  if (bar) bar.style.width = pct + '%';
+  if (typeof generateQueueBoard === 'function') generateQueueBoard(currentNum, yourNum);
+
+  if (wait === 5 && _lastNotifiedAhead !== 5) {
+    _lastNotifiedAhead = 5;
+    if (typeof addSmsLog === 'function') addSmsLog('SMS: Token A-' + yourNum + ' — 5 farmers ahead. Please prepare your documents.');
+    if (typeof showToast === 'function') showToast('📢 SMS Alert: 5 farmers ahead of you!');
+  }
+  if (wait === 2 && _lastNotifiedAhead !== 2) {
+    _lastNotifiedAhead = 2;
+    if (typeof addSmsLog === 'function') addSmsLog('SMS: Token A-' + yourNum + ' — almost your turn (2 ahead).');
+    if (typeof showToast === 'function') showToast('📢 SMS: Almost your turn!');
+  }
+}
+
+function setKycCardCompleted(kind) {
+  // kind: 'kyc' | 'received'
+  const pill = document.getElementById('kycStatusPill');
+  const inner = document.getElementById('kycInnerStatus');
+  const intro = document.getElementById('kycBookedIntro');
+  const track = document.getElementById('kycLiveTrackBox');
+  const done = document.getElementById('kycDoneBox');
+  const prog = document.getElementById('kycProgressLabel');
+  const pbar = document.getElementById('kycProgressBarMain');
+  const warn = document.getElementById('kycWarnText');
+  const title = document.getElementById('kycProgressTitle');
+  const btns = document.getElementById('kycActionBtns');
+
+  if (pill) {
+    pill.textContent = kind === 'kyc' ? 'KYC Complete' : 'Received at Centre';
+    pill.className = 'status-pill';
+    pill.style.background = '#dcfce7';
+    pill.style.color = '#166534';
+  }
+  if (inner) {
+    inner.textContent = kind === 'kyc' ? 'KYC Verified' : 'Token Received';
+    inner.style.color = '#166534';
+  }
+  if (intro) {
+    intro.textContent = kind === 'kyc'
+      ? 'Operator has confirmed KYC. Verification complete.'
+      : 'Procurement token has been received at the centre.';
+  }
+  if (track) track.style.display = 'none';
+  if (done) done.style.display = 'block';
+  if (prog) prog.textContent = kind === 'kyc' ? 'KYC Approved — Complete' : 'Procurement — Received';
+  if (title) title.textContent = 'Status';
+  if (pbar) pbar.style.width = '100%';
+  if (warn) warn.textContent = 'To get a new procurement token, book a new slot below. Live queue will become active again.';
+  if (btns) {
+    // only book new, hide cancel for completed
+    btns.innerHTML = '<button class="primary" style="flex:1;width:100%;" onclick="requireKycThen(\'procurement-booking.html\')">Book New Procurement Slot →</button>';
+  }
+  const defaultBox = document.getElementById('kycDefault');
+  const booked = document.getElementById('kycBooked');
+  if (defaultBox) defaultBox.style.display = 'none';
+  if (booked) booked.style.display = 'block';
+}
+
+function applyKycVerifiedUI() {
+  setKycCardCompleted('kyc');
+}
+
+let _kycUnsub = null;
+let _kycPollTimer = null;
+
+function markKycVerifiedLocal(data) {
+  localStorage.setItem('kycVerified', '1');
+  localStorage.setItem('kycStatus', 'verified');
+  localStorage.setItem('sk_booking_type', 'kyc');
+  applyKycVerifiedUI();
+  if (typeof loadKycBooking === 'function') loadKycBooking();
+  var queueSec = document.getElementById('queue');
+  var queueEmpty = document.getElementById('queueEmpty');
+  if (queueSec) queueSec.style.display = 'none';
+  if (queueEmpty) {
+    queueEmpty.style.display = 'block';
+    var p = queueEmpty.querySelector('p');
+    if (p) p.textContent = 'KYC is complete. Book a procurement slot to join the live queue.';
+  }
+  var inner = document.getElementById('kycInnerStatus');
+  if (inner) {
+    inner.textContent = 'KYC Verified';
+    inner.style.color = '#166534';
+  }
+  var pill = document.getElementById('kycStatusPill');
+  if (pill) {
+    pill.textContent = 'KYC Complete';
+    pill.className = 'status-pill';
+    pill.style.background = '#dcfce7';
+    pill.style.color = '#166534';
+  }
+  if (typeof showToast === 'function' && !window._kycToastShown) {
+    window._kycToastShown = true;
+    showToast('✅ KYC verified by centre — Complete!');
+  }
+  if (typeof addSmsLog === 'function') addSmsLog('KYC status: VERIFIED / Complete by operator.');
+  // stop polling / listener once done
+  if (_kycPollTimer) { clearInterval(_kycPollTimer); _kycPollTimer = null; }
+  if (_kycUnsub) { try { _kycUnsub(); } catch (e) {} _kycUnsub = null; }
+}
+
+async function checkKycVerificationStatus() {
+  const token = localStorage.getItem('kycToken');
+  if (!token) {
+    if (localStorage.getItem('kycVerified') === '1') applyKycVerifiedUI();
+    return;
+  }
+  if (localStorage.getItem('kycVerified') === '1') {
+    applyKycVerifiedUI();
+    return;
+  }
+  if (typeof SK_DB === 'undefined' || !SK_DB.getKycStatus) return;
+  try {
+    const data = await SK_DB.getKycStatus(token);
+    if (data && (data.kycVerified === true || data.kycStatus === 'verified')) {
+      markKycVerifiedLocal(data);
+    }
+  } catch (e) {
+    console.warn('KYC status check failed', e);
+  }
+}
+
+function startKycStatusWatch() {
+  const token = localStorage.getItem('kycToken');
+  if (!token) return;
+  if (localStorage.getItem('kycVerified') === '1') return;
+  const st = (localStorage.getItem('kycStatus') || '').toLowerCase();
+  // only watch while waiting for centre KYC
+  if (st && st !== 'kyc_pending' && st !== 'booked' && localStorage.getItem('sk_booking_type') !== 'kyc') return;
+
+  // Real-time listener on booking doc
+  if (_kycUnsub) { try { _kycUnsub(); } catch (e) {} _kycUnsub = null; }
+  try {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+      const db = firebase.firestore();
+      _kycUnsub = db.collection('bookings').doc(token).onSnapshot(function (snap) {
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        if (data.kycVerified === true || data.kycStatus === 'verified') {
+          markKycVerifiedLocal(data);
+        }
+      }, function (err) { console.warn('KYC listen error', err); });
+    }
+  } catch (e) { console.warn(e); }
+
+  // Fallback poll every 6s
+  if (_kycPollTimer) clearInterval(_kycPollTimer);
+  _kycPollTimer = setInterval(function () {
+    checkKycVerificationStatus();
+  }, 6000);
+  checkKycVerificationStatus();
+}
+
+function startRealTimeQueue() {
+  const tokenEl = document.getElementById('queueYourToken');
+  if (!tokenEl || !tokenEl.textContent || tokenEl.textContent === '—') return;
+
+  const yourNum = parseInt((tokenEl.textContent || '').replace(/\D/g, ''), 10);
+  if (!yourNum) return;
+
+  // clean previous listener
+  if (_queueUnsub) {
+    try { _queueUnsub(); } catch (e) {}
+    _queueUnsub = null;
+  }
+  _lastNotifiedAhead = null;
+
+  if (typeof renderQr === 'function') renderQr(tokenEl.textContent);
+  if (typeof addSmsLog === 'function') {
+    addSmsLog('Slot confirmed. Token ' + tokenEl.textContent + ' assigned.');
+    addSmsLog('Live tracking active (Firestore). You will get SMS when 5 farmers ahead.');
+  }
+
+  // If Firestore ready → real listener, else gentle offline fallback
+  if (typeof SK_DB !== 'undefined' && SK_DB.isReady()) {
+    const centre = localStorage.getItem('sk_centre_code') || SK_DB.CENTRE_CODE || 'NDA62';
+    _queueUnsub = SK_DB.listenQueue(function (data) {
+      const currentNum = data.currentSerial || 100;
+      const avgMin = data.avgMinutesPerFarmer || 3;
+      applyQueueUI(yourNum, currentNum, avgMin);
+    }, centre);
+
+    // one-shot in case snapshot is slow
+    SK_DB.getQueueState(centre).then(function (data) {
+      if (data) applyQueueUI(yourNum, data.currentSerial || 100, data.avgMinutesPerFarmer || 3);
+      else applyQueueUI(yourNum, Math.max(100, yourNum - 8), 3);
+    });
+  } else {
+    // Offline fallback — simulated movement so UI is not stuck
+    let currentNum = Math.max(100, yourNum - 8);
+    applyQueueUI(yourNum, currentNum, 3);
+    const interval = setInterval(function () {
+      if (currentNum >= yourNum) {
+        clearInterval(interval);
+        applyQueueUI(yourNum, yourNum, 3);
+        return;
+      }
+      currentNum++;
+      applyQueueUI(yourNum, currentNum, 3);
+    }, 10000);
+  }
+}
+
+const originalLoadKyc = window.loadKycBooking;
+window.loadKycBooking = function() {
+  if (typeof originalLoadKyc === 'function') originalLoadKyc();
+  setTimeout(function () {
+    const q = document.getElementById('queue');
+    if (q && q.style.display !== 'none') startRealTimeQueue();
+  }, 600);
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function () {
+    if (typeof renderSlotHistory === 'function') renderSlotHistory();
+    const q = document.getElementById('queue');
+    if (q && q.style.display !== 'none') startRealTimeQueue();
+  }, 1500);
+});
+
+let vehicleDist = 4.8;
+setInterval(() => {
+  const distEl = document.getElementById('vehicleDist');
+  const etaEl = document.getElementById('vehicleEta');
+  const bar = document.getElementById('vehicleTrackBar');
+  if (distEl && vehicleDist > 0.3) {
+    vehicleDist = Math.max(0.3, vehicleDist - 0.15);
+    distEl.textContent = vehicleDist.toFixed(1) + ' km';
+    const mins = Math.max(2, Math.round(vehicleDist * 5));
+    if (etaEl) etaEl.textContent = 'ETA ' + mins + ' min';
+    if (bar) bar.style.width = Math.min(95, 68 + (4.8 - vehicleDist) * 6) + '%';
+    if (vehicleDist < 1.0 && !window._nearAlertSent) {
+      window._nearAlertSent = true;
+      addSmsLog('SMS: Procurement vehicle 1 km away. Be ready.');
+      showToast('🚛 Vehicle is near your centre!');
+    }
+  }
+}, 6000);
+</script>
+
+
+<script>
+function tickLivePrices() {
+  const map = [
+    { id: 'priceWheat', base: 2450 },
+    { id: 'pricePaddy', base: 2180 },
+    { id: 'priceMustard', base: 5620 },
+    { id: 'pricePotato', base: 1150 }
+  ];
+  map.forEach(function(p) {
+    const el = document.getElementById(p.id);
+    if (!el) return;
+    const delta = Math.floor(Math.random() * 7) - 3;
+    el.textContent = '₹' + (p.base + delta).toLocaleString('en-IN');
+  });
+}
+setInterval(tickLivePrices, 12000);
+</script>
+
+
+
+<div id="launcher" onclick="openPanel()">
+  <div class="bubble">Ask Birju</div>
+  <div class="face"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Birju mascot">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg></div>
+</div>
+
+<!-- Chat panel -->
+<div id="panel">
+  <header>
+    <div class="avatar"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Birju mascot">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg></div>
+    <div class="titles">
+      <div class="name">Birju</div>
+      <div class="tag" id="header-tag">Your Smart Kisan buddy</div>
+    </div>
+    <button id="lang-btn" onclick="toggleLang()" title="Switch language / भाषा बदलें">हिं</button>
+    <button class="min-btn" onclick="closePanel()">–</button>
+  </header>
+
+  <div id="thread"></div>
+
+  <div id="inputbar">
+    <input id="textbox" type="text" placeholder="Type your query here..." onkeydown="if(event.key==='Enter') sendTyped()" lang="en">
+    <button id="mic-btn" title="Voice (not wired up in this preview)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z"/><path d="M19 11a1 1 0 00-2 0 5 5 0 01-10 0 1 1 0 00-2 0 7 7 0 006 6.92V20H9a1 1 0 000 2h6a1 1 0 000-2h-2v-2.08A7 7 0 0019 11z"/></svg>
+    </button>
+    <button id="send-btn" onclick="sendTyped()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20l18-8L3 4v6l12 2-12 2v6z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ---------------- cute apple mascot (reused everywhere) ---------------- */
+/* ---------------- cute apple mascot (reused everywhere) ---------------- */
+const APPLE_SVG = `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 8c2 4 6 5 8 5s6-1 8-5" stroke="#5B6555" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="10" rx="7" ry="4" fill="#4C9A3A" transform="rotate(-25 14 10)"/>
+  <path d="M32 14c13 0 20 10 20 21 0 13-9 22-20 22S12 48 12 35c0-11 7-21 20-21z" fill="#E14D3A"/>
+  <path d="M32 14c13 0 20 10 20 21 0 6-2 11-5.5 15 2-9-1-19-9-24-3-2-5-8-5-12z" fill="#C43B2A" opacity=".55"/>
+  <circle cx="24" cy="34" r="3" fill="#26321F"/>
+  <circle cx="40" cy="34" r="3" fill="#26321F"/>
+  <circle cx="21" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <circle cx="43" cy="41" r="3.4" fill="#F58C7A" opacity=".8"/>
+  <path d="M24 45c3 3 13 3 16 0" stroke="#26321F" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+</svg>`;
+document.getElementById('launcher').querySelector('.face').innerHTML = APPLE_SVG;
+
+document.querySelector('#panel header .avatar').innerHTML = APPLE_SVG;
+
+/* ---------------- panel open/close ---------------- */
+const panel = document.getElementById('panel');
+const launcher = document.getElementById('launcher');
+function openPanel(){
+  panel.classList.add('open');
+  launcher.style.display = 'none';
+  if(thread.childElementCount === 0) startConversation();
+}
+function closePanel(){
+  panel.classList.remove('open');
+  launcher.style.display = 'flex';
+}
+
+/* ---------------- language toggle ---------------- */
+let lang = 'en';
+
+function applyStaticLangText(){
+  document.getElementById('lang-btn').textContent = (lang === 'en') ? 'हिं' : 'EN';
+  document.getElementById('header-tag').textContent = (lang === 'en')
+    ? 'Your Smart Kisan buddy' : 'आपका स्मार्ट किसान साथी';
+  const box = document.getElementById('textbox');
+  box.placeholder = (lang === 'en') ? 'Type your query here...' : 'यहां अपना सवाल लिखें...';
+  box.lang = lang;
+}
+
+function toggleLang(){
+  lang = (lang === 'en') ? 'hi' : 'en';
+  applyStaticLangText();
+  // Restart the conversation cleanly in the newly selected language so the
+  // whole procedure (greeting, menu, prompts, conditions) is consistent.
+  thread.innerHTML = '';
+  state = 'MENU';
+  lastCropKey = null;
+  tempLocation = null;
+  startConversation();
+}
+
+/* ---------------- chat rendering helpers ---------------- */
+const thread = document.getElementById('thread');
+
+function scrollDown(){ thread.scrollTop = thread.scrollHeight; }
+
+function botMessage(text, delay=450){
+  const typingRow = document.createElement('div');
+  typingRow.className = 'row bot';
+  typingRow.innerHTML = `<div class="mini-avatar">${APPLE_SVG}</div><div class="typing"><span></span><span></span><span></span></div>`;
+  thread.appendChild(typingRow);
+  scrollDown();
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      typingRow.remove();
+      const row = document.createElement('div');
+      row.className = 'row bot';
+      row.innerHTML = `<div class="mini-avatar">${APPLE_SVG}</div><div class="bubble-msg">${text}</div>`;
+      thread.appendChild(row);
+      scrollDown();
+      resolve();
+    }, delay);
+  });
+}
+
+function userMessage(text){
+  const row = document.createElement('div');
+  row.className = 'row user';
+  row.innerHTML = `<div class="bubble-msg"></div>`;
+  row.querySelector('.bubble-msg').textContent = text;
+  thread.appendChild(row);
+  scrollDown();
+}
+
+function showPills(options, cls=''){
+  const wrap = document.createElement('div');
+  wrap.className = 'pills';
+  options.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className = 'pill ' + cls;
+    b.textContent = opt;
+    b.onclick = ()=>{ wrap.remove(); userMessage(opt); handleInput(opt); };
+    wrap.appendChild(b);
+  });
+  thread.appendChild(wrap);
+  scrollDown();
+}
+
+/* ---------------- conversation state (mirrors the Python if-elif logic) ---------------- */
+let state = 'MENU';
+let lastCropKey = null;
+let tempLocation = null;
+
+/* ---------------- bilingual text table ---------------- */
+const T = {
+  en: {
+    greet1: "Hello hello, sir. Hello, hello, sir/ma'am. How may I help you?",
+    greet2: "Here's what I can help with — pick one, or just type it below.",
+    menu: [
+      '🌱 Seed selection',
+      '🧪 Fertilizer help',
+      '💧 Drip irrigation & water',
+      '🏛️ Schemes for you',
+      '📚 Learn horticulture',
+      '🚜 Procurement tracking',
+      '🌤️ Mandi rate & weather'
+    ],
+    askLocation: "Sure, could you tell me your location?",
+    askSoil: "And how would you describe your soil quality? (e.g. sandy, loamy, clayey, semi-dry, medium dry)",
+    seedResult: (location, soil, seedDisplay) => `Based on <b>${location}</b> and '<i>${soil}</i>' soil, I'd suggest <b>${seedDisplay}</b>.`,
+    seedReason: (reason) => `Reason — ${reason}.`,
+    thanks: "Hope it helped! Thank you. 🙏",
+    fertOffer: (cropName) => `Sir/Ma'am, can I offer you fertilizer suggestions for your ${cropName} crop?`,
+    yesNo: ['Yes, please', 'No, thanks'],
+    fertResult: (crop, fert) => `For your ${crop}, use — ${fert}.`,
+    noProblem: "No problem, let me know if you need anything else.",
+    anythingElse: "Anything else I can help with?",
+    whichCropFert: "Which crop do you need fertilizer advice for?",
+    cropList: ['Wheat','Mustard','Paddy','Soybean','Jowar','Bajra','Ragi','Groundnut','Barley','Maize'],
+    fallback: "Sorry, I didn't catch that. Please pick one of the options below.",
+    irrigationInfo: "Drip irrigation & water planning —<br>• Up to 55% subsidy under PMKSY<br>• Saves 30–50% water vs flood irrigation<br>• Best for cotton, sugarcane, vegetables, orchards<br>• Apply via your Agriculture Dept. office or CSC",
+    schemesInfo: "Schemes you may benefit from —<br>• <b>PM-KISAN</b>: ₹6,000/year direct benefit<br>• <b>PMFBY</b>: subsidised crop insurance<br>• <b>PMKSY</b>: up to 55% drip/sprinkler subsidy<br>• <b>KCC</b>: low-interest crop loans",
+    horticultureInfo: "Horticulture learning topics —<br>• Vegetable farming<br>• Fruit farming<br>• Nursery management<br>• Drip irrigation for orchards<br>• Pest management (bio-pesticides, sticky & pheromone traps)",
+    procurementInfo: "Procurement booking & tracking —<br>• Book your slot to avoid long queues<br>• Track live: Weighed → Quality Check → Accepted → Payment<br>• You'll get SMS/app alerts as your status updates",
+    mandiWeatherInfo: "Mandi rate & weather for sowing —<br>• Wheat ₹2,450 · Paddy ₹2,180 · Mustard ₹5,620 (per quintal)<br>• Clear today, light rain expected Tuesday — avoid spraying<br>• Prices update every hour",
+  },
+  hi: {
+    greet1: "नमस्ते नमस्ते जी। नमस्ते, नमस्ते सर/मैडम। मैं आपकी क्या मदद कर सकता हूं?",
+    greet2: "यहां वे विषय हैं जिनमें मैं मदद कर सकता हूं — एक चुनें, या नीचे टाइप करें।",
+    menu: [
+      '🌱 बीज चयन',
+      '🧪 उर्वरक सहायता',
+      '💧 ड्रिप सिंचाई और पानी',
+      '🏛️ आपके लिए योजनाएं',
+      '📚 बागवानी सीखें',
+      '🚜 खरीद ट्रैकिंग',
+      '🌤️ मंडी भाव और मौसम'
+    ],
+    askLocation: "जरूर, क्या आप मुझे अपना स्थान बता सकते हैं?",
+    askSoil: "और आप अपनी मिट्टी की गुणवत्ता का वर्णन कैसे करेंगे? (जैसे बलुई, दोमट, चिकनी, अर्ध-शुष्क, मध्यम सूखी)",
+    seedResult: (location, soil, seedDisplay) => `<b>${location}</b> और '<i>${soil}</i>' मिट्टी के आधार पर, मैं <b>${seedDisplay}</b> सुझाऊंगा।`,
+    seedReason: (reason) => `कारण — ${reason}।`,
+    thanks: "उम्मीद है इससे मदद मिली! धन्यवाद। 🙏",
+    fertOffer: (cropName) => `सर/मैडम, क्या मैं आपकी ${cropName} फसल के लिए उर्वरक सुझाव दूं?`,
+    yesNo: ['हां, बताएं', 'नहीं, धन्यवाद'],
+    fertResult: (crop, fert) => `आपकी ${crop} के लिए, उपयोग करें — ${fert}।`,
+    noProblem: "कोई बात नहीं, अगर कुछ और चाहिए तो बताइएगा।",
+    anythingElse: "क्या मैं किसी और चीज़ में मदद कर सकता हूं?",
+    whichCropFert: "आपको किस फसल के लिए उर्वरक सलाह चाहिए?",
+    cropList: ['गेहूं','सरसों','धान','सोयाबीन','ज्वार','बाजरा','रागी','मूंगफली','जौ','मक्का'],
+    fallback: "माफ कीजिए, मैं समझ नहीं पाया। कृपया नीचे दिए गए विकल्पों में से एक चुनें।",
+    irrigationInfo: "ड्रिप सिंचाई और जल प्रबंधन —<br>• PMKSY के तहत 55% तक सब्सिडी<br>• बाढ़ सिंचाई की तुलना में 30–50% पानी की बचत<br>• कपास, गन्ना, सब्जियों और बागों के लिए सर्वोत्तम<br>• अपने कृषि विभाग कार्यालय या CSC के माध्यम से आवेदन करें",
+    schemesInfo: "जिन योजनाओं से आपको लाभ हो सकता है —<br>• <b>पीएम-किसान</b>: ₹6,000/वर्ष प्रत्यक्ष लाभ<br>• <b>पीएमएफबीवाई</b>: सब्सिडी वाला फसल बीमा<br>• <b>पीएमकेएसवाई</b>: ड्रिप/स्प्रिंकलर पर 55% तक सब्सिडी<br>• <b>केसीसी</b>: कम ब्याज दर पर फसल ऋण",
+    horticultureInfo: "बागवानी से जुड़े सीखने के विषय —<br>• सब्जी की खेती<br>• फल की खेती<br>• नर्सरी प्रबंधन<br>• बागों के लिए ड्रिप सिंचाई<br>• कीट प्रबंधन (जैव-कीटनाशक, चिपचिपा व फेरोमोन ट्रैप)",
+    procurementInfo: "खरीद बुकिंग और ट्रैकिंग —<br>• लंबी कतार से बचने के लिए अपना स्लॉट बुक करें<br>• लाइव ट्रैक करें: तौल → गुणवत्ता जांच → स्वीकृत → भुगतान<br>• स्थिति अपडेट होने पर आपको SMS/ऐप अलर्ट मिलेंगे",
+    mandiWeatherInfo: "बुवाई के लिए मंडी भाव और मौसम —<br>• गेहूं ₹2,450 · धान ₹2,180 · सरसों ₹5,620 (प्रति क्विंटल)<br>• आज साफ मौसम, मंगलवार को हल्की बारिश की संभावना — छिड़काव न करें<br>• भाव हर घंटे अपडेट होते हैं",
+  }
+};
+
+async function startConversation(){
+  const t = T[lang];
+  await botMessage(t.greet1);
+  await botMessage(t.greet2, 300);
+  showPills(t.menu);
+}
+
+/* ---- seed recommendation: soil texture drives the crop, region only sets
+      the fallback (for unrecognised soil text) and variety flavour.
+      Keyword lists include both English and Hindi (Devanagari) terms so the
+      same conditions work no matter which language the farmer types in. ---- */
+function classifyRegion(location){
+  if(['noida','delhi','meerut','ghaziabad','up','uttar pradesh','punjab','haryana','bihar','west bengal','lucknow','kanpur','patna','kolkata',
+      'उत्तर प्रदेश','पंजाब','हरियाणा','बिहार','दिल्ली','नोएडा','गाज़ियाबाद','गाजियाबाद','लखनऊ','कानपुर','पटना','कोलकाता'].some(k=>location.includes(k))) return 'north';
+  if(['maharashtra','madhya pradesh',' mp','chhattisgarh','pune','nagpur','bhopal','indore',
+      'महाराष्ट्र','मध्य प्रदेश','छत्तीसगढ़','पुणे','नागपुर','भोपाल','इंदौर'].some(k=>location.includes(k))) return 'deccan';
+  if(['karnataka','tamil nadu','andhra','telangana','kerala','bangalore','bengaluru','chennai','hyderabad',
+      'कर्नाटक','तमिलनाडु','आंध्र','तेलंगाना','केरल','बेंगलुरु','बैंगलोर','चेन्नई','हैदराबाद'].some(k=>location.includes(k))) return 'south';
+  if(['gujarat','ahmedabad','surat','vadodara','गुजरात','अहमदाबाद','सूरत','वडोदरा'].some(k=>location.includes(k))) return 'west';
+  if(['rajasthan','jaipur','jodhpur','bikaner','राजस्थान','जयपुर','जोधपुर','बीकानेर'].some(k=>location.includes(k))) return 'arid';
+  return 'general';
+}
+
+function classifySoil(soil){
+  if(soil.includes('black') || soil.includes('cotton') || soil.includes('काली')) return 'black';
+  if(soil.includes('laterite') || soil.includes('लेटराइट')) return 'laterite';
+  if(soil.includes('red') || soil.includes('लाल')) return 'red';
+  if(soil.includes('saline') || soil.includes('alkaline') || soil.includes('खारी') || soil.includes('क्षारीय')) return 'saline';
+  if(soil.includes('sandy') || soil.includes('sand') || soil.includes('बलुई') || soil.includes('रेतीली') || soil.includes('रेतीला')) return 'sandy';
+  if(soil.includes('clay') || soil.includes('चिकनी')) return 'clay';
+  if(soil.includes('silt') || soil.includes('सिल्ट')) return 'silty';
+  if(soil.includes('loam') || soil.includes('दोमट')) return 'loamy';
+  if(soil.includes('alluvial') || soil.includes('जलोढ़') || soil.includes('जलोढ')) return 'alluvial';
+  if(soil.includes('semi') || soil.includes('medium') || soil.includes('अर्ध') || soil.includes('मध्यम')) return 'semi_dry';
+  if(soil.includes('dry') || soil.includes('arid') || soil.includes('सूखी') || soil.includes('सूखा') || soil.includes('शुष्क')) return 'dry';
+  if(soil.includes('moist') || soil.includes('wet') || soil.includes('water') || soil.includes('नम') || soil.includes('गीली') || soil.includes('गीला')) return 'moist';
+  return 'unknown';
+}
+
+const REGION_DEFAULT = {
+  en: {
+    north:   ['wheat',     'Wheat (general recommendation)',   'wheat is the dominant Rabi crop across the northern plains'],
+    deccan:  ['jowar',     'Jowar / Sorghum',                   'a hardy crop that performs well across mixed Deccan soils'],
+    south:   ['ragi',      'Ragi (Finger millet)',              "ragi is a reliable, low-maintenance staple across southern soils"],
+    west:    ['groundnut', 'Groundnut (TAG-24 variety)',        "groundnut is a common, well-suited crop for Gujarat's soils"],
+    arid:    ['bajra',     'Bajra (Pearl millet)',              'bajra is drought-tolerant and thrives in arid conditions'],
+    general: ['maize',     'Maize (hybrid variety)',            'maize is a flexible crop that adapts to most soil types — get a soil test for a more exact match'],
+  },
+  hi: {
+    north:   ['wheat',     'गेहूं (सामान्य सिफारिश)',            'उत्तरी मैदानी क्षेत्र में गेहूं प्रमुख रबी फसल है'],
+    deccan:  ['jowar',     'ज्वार',                              'यह एक मजबूत फसल है जो दक्कन की मिश्रित मिट्टी में अच्छी तरह उगती है'],
+    south:   ['ragi',      'रागी (मंडुआ)',                       'रागी दक्षिणी मिट्टी के लिए एक भरोसेमंद, कम रखरखाव वाली फसल है'],
+    west:    ['groundnut', 'मूंगफली (टीएजी-24 किस्म)',           'मूंगफली गुजरात की मिट्टी के लिए एक आम और उपयुक्त फसल है'],
+    arid:    ['bajra',     'बाजरा',                              'बाजरा सूखा-सहिष्णु है और शुष्क परिस्थितियों में अच्छी तरह पनपता है'],
+    general: ['maize',     'मक्का (संकर किस्म)',                 'मक्का एक लचीली फसल है जो अधिकांश मिट्टी के प्रकारों के अनुकूल होती है — सटीक सुझाव के लिए मिट्टी की जांच करवाएं'],
+  }
+};
+
+const SOIL_CROP = {
+  en: {
+    black:    ['soybean',  'Soybean (JS-335 variety)',      'black cotton soil retains moisture well and suits soybean'],
+    red:      ['groundnut','Groundnut (TAG-24 variety)',    'red soil drains well, which groundnut prefers'],
+    laterite: ['ragi',     'Ragi (Finger millet)',          'laterite soil is low in fertility, and ragi tolerates that well'],
+    saline:   ['barley',   'Barley',                        'barley handles salinity better than wheat'],
+    sandy:    ['bajra',    'Bajra (Pearl millet)',          'bajra thrives in sandy, drought-prone soil'],
+    clay:     ['paddy',    'Paddy (Basmati-1509 variety)',  'clayey soil retains water well, which paddy needs'],
+    silty:    ['maize',    'Maize (hybrid variety)',        'silty soil drains moderately and suits maize'],
+    loamy:    ['wheat',    'Wheat (HD-2967 variety)',       'loamy soil is the most balanced soil type, ideal for wheat'],
+    alluvial: ['wheat',    'Wheat (HD-3086 variety)',       'fertile alluvial soil is well suited to wheat'],
+    semi_dry: ['mustard',  'Mustard (Pusa Bold variety)',   'semi-dry soil suits mustard, which needs less water than wheat'],
+    dry:      ['bajra',    'Bajra (Pearl millet)',          'dry soil favours drought-tolerant bajra'],
+    moist:    ['paddy',    'Paddy (Basmati-1509 variety)',  'moist, water-retentive soil is ideal for paddy'],
+  },
+  hi: {
+    black:    ['soybean',  'सोयाबीन (जेएस-335 किस्म)',            'काली कपास मिट्टी नमी अच्छी तरह बनाए रखती है, जो सोयाबीन के लिए उपयुक्त है'],
+    red:      ['groundnut','मूंगफली (टीएजी-24 किस्म)',            'लाल मिट्टी का जल निकास अच्छा होता है, जो मूंगफली के लिए पसंदीदा है'],
+    laterite: ['ragi',     'रागी (मंडुआ)',                        'लेटराइट मिट्टी में उर्वरता कम होती है, और रागी इसे अच्छी तरह सहन करती है'],
+    saline:   ['barley',   'जौ',                                  'जौ गेहूं की तुलना में लवणता को बेहतर तरीके से सहन करता है'],
+    sandy:    ['bajra',    'बाजरा',                               'बाजरा बलुई, सूखा-प्रवण मिट्टी में अच्छी तरह पनपता है'],
+    clay:     ['paddy',    'धान (बासमती-1509 किस्म)',             'चिकनी मिट्टी पानी को अच्छी तरह रोके रखती है, जो धान के लिए आवश्यक है'],
+    silty:    ['maize',    'मक्का (संकर किस्म)',                  'सिल्ट मिट्टी में मध्यम जल निकास होता है, जो मक्का के लिए उपयुक्त है'],
+    loamy:    ['wheat',    'गेहूं (एचडी-2967 किस्म)',             'दोमट मिट्टी सबसे संतुलित मिट्टी प्रकार है, जो गेहूं के लिए आदर्श है'],
+    alluvial: ['wheat',    'गेहूं (एचडी-3086 किस्म)',             'उपजाऊ जलोढ़ मिट्टी गेहूं के लिए बहुत उपयुक्त है'],
+    semi_dry: ['mustard',  'सरसों (पूसा बोल्ड किस्म)',            'अर्ध-शुष्क मिट्टी सरसों के लिए उपयुक्त है, जिसे गेहूं से कम पानी चाहिए'],
+    dry:      ['bajra',    'बाजरा',                               'सूखी मिट्टी सूखा-सहिष्णु बाजरा के लिए अनुकूल है'],
+    moist:    ['paddy',    'धान (बासमती-1509 किस्म)',             'नम, जल धारण करने वाली मिट्टी धान के लिए आदर्श है'],
+  }
+};
+
+/* Crop key -> display name in each language, used whenever we need to show
+   just the crop name (e.g. "For your <crop>, use ...") */
+const CROP_NAME = {
+  en: { wheat:'wheat', mustard:'mustard', paddy:'paddy', soybean:'soybean', jowar:'jowar', bajra:'bajra', ragi:'ragi', groundnut:'groundnut', barley:'barley', maize:'maize' },
+  hi: { wheat:'गेहूं', mustard:'सरसों', paddy:'धान', soybean:'सोयाबीन', jowar:'ज्वार', bajra:'बाजरा', ragi:'रागी', groundnut:'मूंगफली', barley:'जौ', maize:'मक्का' }
+};
+
+/* Recognise a crop name typed (or tapped from a pill) in EITHER language and
+   map it back to the internal crop key used by getFertilizerRecommendation. */
+const CROP_KEYWORDS = {
+  wheat:     ['wheat','गेहूं','गेहू'],
+  mustard:   ['mustard','सरसों','सरसो'],
+  paddy:     ['paddy','rice','धान','चावल'],
+  soybean:   ['soybean','सोयाबीन'],
+  jowar:     ['jowar','sorghum','ज्वार'],
+  bajra:     ['bajra','pearl millet','बाजरा'],
+  ragi:      ['ragi','finger millet','रागी','मंडुआ'],
+  groundnut: ['groundnut','peanut','मूंगफली'],
+  barley:    ['barley','जौ'],
+  maize:     ['maize','corn','मक्का'],
+};
+function normalizeCropKey(raw){
+  const t = raw.toLowerCase().trim();
+  for(const key in CROP_KEYWORDS){
+    if(CROP_KEYWORDS[key].some(w => t.includes(w.toLowerCase()))) return key;
+  }
+  return t;
+}
+
+function getSeedRecommendation(locationRaw, soilRaw){
+  const location = locationRaw.toLowerCase();
+  const soil = soilRaw.toLowerCase();
+  const region = classifyRegion(location);
+  const soilCategory = classifySoil(soil);
+
+  const [cropKey, seedDisplay, reason] = soilCategory === 'unknown'
+    ? REGION_DEFAULT[lang][region]
+    : SOIL_CROP[lang][soilCategory];
+
+  return {seedDisplay, cropKey, reason};
+}
+
+function getFertilizerRecommendation(cropKey){
+  const fert = {
+    en: {
+      wheat:     'DAP 100 kg/acre at sowing + Urea 50 kg/acre in 2 splits + light Potash (MOP) 20 kg/acre',
+      mustard:   'DAP 50 kg/acre at sowing + Urea 25 kg/acre after 30 days + Sulphur for better oil content',
+      paddy:     'Urea in 3 splits (basal, tillering, panicle stage) + DAP at transplanting + Zinc Sulphate if soil is deficient',
+      soybean:   'Light DAP basal dose only — soybean fixes its own nitrogen, so avoid excess Urea',
+      jowar:     'Urea 40 kg/acre in 2 splits + DAP 20 kg/acre at sowing',
+      bajra:     'Urea 20 kg/acre + DAP 15 kg/acre — works well even in sandy, low-fertility soil',
+      ragi:      'Urea 20 kg/acre in 2 splits + DAP 15 kg/acre at sowing — ragi needs very little fertilizer',
+      groundnut: 'Light DAP + Gypsum (250 kg/acre) at flowering for better pods — avoid excess nitrogen',
+      barley:    'Urea 40 kg/acre in 2 splits + DAP 25 kg/acre — keep nitrogen moderate on saline soil',
+      maize:     'Urea 50 kg/acre in 3 splits + DAP 30 kg/acre at sowing + Zinc Sulphate for better yield',
+      default:   'A balanced NPK dose is recommended — please consult your nearest Krishi Vigyan Kendra for exact quantities',
+    },
+    hi: {
+      wheat:     'बुवाई के समय डीएपी 100 किग्रा/एकड़ + यूरिया 50 किग्रा/एकड़ 2 भागों में + हल्की पोटाश (एमओपी) 20 किग्रा/एकड़',
+      mustard:   'बुवाई के समय डीएपी 50 किग्रा/एकड़ + 30 दिन बाद यूरिया 25 किग्रा/एकड़ + बेहतर तेल सामग्री के लिए सल्फर',
+      paddy:     '3 भागों में यूरिया (आधार, कल्ले फूटते समय, बाली निकलते समय) + रोपाई के समय डीएपी + मिट्टी में कमी होने पर जिंक सल्फेट',
+      soybean:   'केवल हल्की डीएपी आधार खुराक — सोयाबीन खुद नाइट्रोजन स्थिर करता है, इसलिए अधिक यूरिया से बचें',
+      jowar:     '2 भागों में यूरिया 40 किग्रा/एकड़ + बुवाई के समय डीएपी 20 किग्रा/एकड़',
+      bajra:     'यूरिया 20 किग्रा/एकड़ + डीएपी 15 किग्रा/एकड़ — बलुई, कम उर्वरता वाली मिट्टी में भी अच्छा काम करता है',
+      ragi:      '2 भागों में यूरिया 20 किग्रा/एकड़ + बुवाई के समय डीएपी 15 किग्रा/एकड़ — रागी को बहुत कम उर्वरक चाहिए',
+      groundnut: 'हल्की डीएपी + फूल आने पर बेहतर फली के लिए जिप्सम (250 किग्रा/एकड़) — अधिक नाइट्रोजन से बचें',
+      barley:    '2 भागों में यूरिया 40 किग्रा/एकड़ + डीएपी 25 किग्रा/एकड़ — खारी मिट्टी में नाइट्रोजन मध्यम रखें',
+      maize:     '3 भागों में यूरिया 50 किग्रा/एकड़ + बुवाई के समय डीएपी 30 किग्रा/एकड़ + बेहतर उपज के लिए जिंक सल्फेट',
+      default:   'संतुलित एनपीके खुराक की सिफारिश की जाती है — कृपया सटीक मात्रा के लिए अपने निकटतम कृषि विज्ञान केंद्र से संपर्क करें',
+    }
+  };
+  const table = fert[lang];
+  return table[cropKey] || table.default;
+}
+
+/* ---------------- bilingual keyword sets for the MENU dispatcher ---------------- */
+const KEYWORDS = {
+  seed:        ['seed','बीज'],
+  fertilizer:  ['fertilizer','उर्वरक','खाद'],
+  irrigation:  ['drip','irrigation','water','सिंचाई','पानी','ड्रिप'],
+  scheme:      ['scheme','योजना'],
+  horticulture:['horticulture','learn','बागवानी','सीख'],
+  procurement: ['procurement','track','book','खरीद','ट्रैक','बुक'],
+  mandi:       ['mandi','weather','sowing','मंडी','मौसम','बुवाई'],
+  yes:         ['yes','sure','ok','हां','हाँ','ठीक'],
+};
+function matches(text, key){
+  return KEYWORDS[key].some(k => text.includes(k));
+}
+
+/* ---------------- main dispatcher (mirrors the Python if/elif chain,
+   now checking conditions in both English and Hindi) ---------------- */
+async function handleInput(raw){
+  const text = raw.toLowerCase().trim();
+  const t = T[lang];
+
+  if(state === 'ASK_LOCATION'){
+    tempLocation = raw;
+    state = 'ASK_SOIL';
+    await botMessage(t.askSoil);
+    return;
+  }
+
+  if(state === 'ASK_SOIL'){
+    const {seedDisplay, cropKey, reason} = getSeedRecommendation(tempLocation, raw);
+    lastCropKey = cropKey;
+    await botMessage(t.seedResult(tempLocation, raw, seedDisplay));
+    await botMessage(t.seedReason(reason), 300);
+    await botMessage(t.thanks, 300);
+    state = 'ASK_FERT_OFFER';
+    const cropName = seedDisplay.split('(')[0].trim();
+    await botMessage(t.fertOffer(cropName), 350);
+    showPills(t.yesNo, 'alt');
+    return;
+  }
+
+  if(state === 'ASK_FERT_OFFER'){
+    if(matches(text, 'yes')){
+      const fert = getFertilizerRecommendation(lastCropKey);
+      await botMessage(t.fertResult(CROP_NAME[lang][lastCropKey] || lastCropKey, fert));
+    } else {
+      await botMessage(t.noProblem);
+    }
+    state = 'MENU';
+    await botMessage(t.anythingElse, 300);
+    showPills(t.menu);
+    return;
+  }
+
+  if(state === 'ASK_FERT_CROP'){
+    const cropKey = normalizeCropKey(raw);
+    const fert = getFertilizerRecommendation(cropKey);
+    await botMessage(t.fertResult(CROP_NAME[lang][cropKey] || raw, fert));
+    state = 'MENU';
+    await botMessage(t.anythingElse, 300);
+    showPills(t.menu);
+    return;
+  }
+
+  /* ---- MENU state: match keywords in either language, same flow as the Python version ---- */
+  if(matches(text, 'seed')){
+    state = 'ASK_LOCATION';
+    await botMessage(t.askLocation);
+  } else if(matches(text, 'fertilizer')){
+    if(lastCropKey){
+      const fert = getFertilizerRecommendation(lastCropKey);
+      await botMessage(t.fertResult(CROP_NAME[lang][lastCropKey] || lastCropKey, fert));
+      await botMessage(t.anythingElse, 300);
+      showPills(t.menu);
+    } else {
+      state = 'ASK_FERT_CROP';
+      await botMessage(t.whichCropFert);
+      showPills(t.cropList, 'alt');
+    }
+  } else if(matches(text, 'irrigation')){
+    await botMessage(t.irrigationInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'scheme')){
+    await botMessage(t.schemesInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'horticulture')){
+    await botMessage(t.horticultureInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'procurement')){
+    await botMessage(t.procurementInfo);
+    showPills(t.menu);
+  } else if(matches(text, 'mandi')){
+    await botMessage(t.mandiWeatherInfo);
+    showPills(t.menu);
+  } else {
+    await botMessage(t.fallback);
+    showPills(t.menu);
+  }
+}
+
+function sendTyped(){
+  const box = document.getElementById('textbox');
+  const val = box.value.trim();
+  if(!val) return;
+  userMessage(val);
+  box.value = '';
+  handleInput(val);
+}
+</script>
+</body>
+</html>
